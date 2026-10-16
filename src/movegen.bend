@@ -10,6 +10,10 @@ import ./core.bend as C
 import ./tables.bend as T
 import ./board.bend as B
 
+def att.ray?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32) ->
+  Array<U32> & Bool:
+  att.ray.c(t, d, w1, w2, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
 # reads finished: decide the probe
 def att.ray.d?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, +v: U32,
                ok: Bool, empty: Bool) -> Array<U32> & Bool:
@@ -25,10 +29,6 @@ def att.ray.c?(+t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, ok: Bool,
                r: Array<U32> & U32) -> Array<U32> & Bool:
   (m, +v) = r
   att.ray.d(m, t, d, w1, w2, len, v, ok, U32.is_zero(v))
-
-def att.ray?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32) ->
-  Array<U32> & Bool:
-  att.ray.c(t, d, w1, w2, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
 
 def att.seq?(m: Array<U32>, +sq: U32, +by: U32, +k: U32, go: Bool) -> Array<U32> & Bool:
   match go:
@@ -62,6 +62,15 @@ def left_in_check(m: Array<U32>, +np: B.Pos) -> Array<U32> & Bool:
   +side = B.P.side(np)
   attacked(m, B.P.king(np, C.opp(side)), side)
 
+def gen.walk.c?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
+                +n: U32, ok: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  gen.walk.d(m, us, base, qs, from, t, d, len, n, v, ok, U32.is_zero(v))
+
+def gen.walk?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
+              +d: U32, +len: U32, +n: U32) -> Array<U32> & U32:
+  gen.walk.c(us, base, qs, from, t, d, len, n, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
 def gen.walk.e?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
                 r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
@@ -78,15 +87,6 @@ def gen.walk.d?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U
       B.push(m, base, n, C.mv.make(from, t, 0), U32.is_ne(C.pc.color(v), us))
     case True{} True{}:
       gen.walk.e(us, base, qs, from, t, d, len, B.push(m, base, n, C.mv.make(from, t, 0), U32.is_zero(qs)))
-
-def gen.walk.c?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
-                +n: U32, ok: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  gen.walk.d(m, us, base, qs, from, t, d, len, n, v, ok, U32.is_zero(v))
-
-def gen.walk?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
-              +d: U32, +len: U32, +n: U32) -> Array<U32> & U32:
-  gen.walk.c(us, base, qs, from, t, d, len, n, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
 
 # directions di..de-1 from square `from`, up to len steps each
 def gen.dirs?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +n: U32, +di: U32,
@@ -130,6 +130,14 @@ def gen.piece?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32
     case True{}:
       gen.type(m, us, ep, base, qs, sq, n, U32.to_nat(C.pc.type(v)))
 
+def gen.sq?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
+            go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, n)
+    case True{}:
+      gen.pc(us, ep, base, qs, sq, n, m[sq])
+
 def gen.next?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, r: Array<U32> & U32) ->
   Array<U32> & U32:
   (m, +n) = r
@@ -142,14 +150,6 @@ def gen.pc?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
   +nx = U32.add(s1, U32.and(s1, 8))
   gen.next(us, ep, base, qs, nx, gen.piece(m, us, ep, base, qs, sq, n, v,
     U32.is_ne(v, 0) && U32.is_eq(C.pc.color(v), us)))
-
-def gen.sq?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
-            go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, n)
-    case True{}:
-      gen.pc(us, ep, base, qs, sq, n, m[sq])
 
 # still ok and square sq not attacked by `by`?
 def chk.safe(+sq: U32, +by: U32, r: Array<U32> & Bool) -> Array<U32> & Bool:
@@ -187,6 +187,16 @@ def gen.fin(+us: U32, +rights: U32, +base: U32, full: Bool, r: Array<U32> & U32)
     case False{}:
       r
 
+# generate from every piece of colour us, iterating the occupancy bits
+def gen.bits?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +n: U32) ->
+  Array<U32> & U32:
+  gen.bits.a(m, us, ep, base, qs, lo, hi, n, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
+
+def gen.bits.n?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +n) = r
+  gen.bits(m, us, ep, base, qs, lo, hi, n)
+
 def gen.bits.p?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +sq: U32, +n: U32,
                 r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
@@ -203,16 +213,6 @@ def gen.bits.a?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U3
       gen.bits.p(us, ep, base, qs, lo, U32.and(hi, U32.sub(hi, 1)), sq, n, m[sq])
     case False{} False{}:
       (m, n)
-
-# generate from every piece of colour us, iterating the occupancy bits
-def gen.bits?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +n: U32) ->
-  Array<U32> & U32:
-  gen.bits.a(m, us, ep, base, qs, lo, hi, n, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
-
-def gen.bits.n?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +n) = r
-  gen.bits(m, us, ep, base, qs, lo, hi, n)
 
 # all pseudo-legal moves (qs = 0) or captures and queen promotions (qs = 1)
 def gen(m: Array<U32>, +p: B.Pos, +base: U32, +qs: U32) -> Array<U32> & U32:
@@ -280,17 +280,6 @@ def fen.parse(m: Array<U32>, s: String) -> Array<U32> & B.Pos:
            0, 0, 0} : B.Acc}
   B.fen.pos(side, castle, ep, half, scan(m, 0, B.Scan{a0, C.NO_SQ(), C.NO_SQ(), B.Occ{0, 0, 0, 0, 0, 0, 0, 0, 0}}, True{}))
 
-def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
-  fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))
-
-def fen.row.v?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, +v: U32, empty: Bool) ->
-  Array<U32> & String:
-  match empty:
-    case True{}:
-      fen.rows(m, U32.add(f, 1), r, U32.add(e, 1), acc)
-    case False{}:
-      fen.rows(m, U32.add(f, 1), r, 0, acc ++ B.fen.gap(e) ++ B.fen.pchar(U32.to_nat(v)))
-
 def fen.row.k?(+f: U32, +r: U32, +e: U32, acc: String, r2: Array<U32> & U32) -> Array<U32> & String:
   (m, +v) = r2
   fen.row.v(m, f, r, e, acc, v, U32.is_zero(v))
@@ -305,6 +294,17 @@ def fen.rows.go?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, inrow: B
     case False{} False{}:
       fen.rows(m, 0, U32.sub(r, 1), 0, acc ++ B.fen.gap(e) ++ "/")
 
+def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
+  fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))
+
+def fen.row.v?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, +v: U32, empty: Bool) ->
+  Array<U32> & String:
+  match empty:
+    case True{}:
+      fen.rows(m, U32.add(f, 1), r, U32.add(e, 1), acc)
+    case False{}:
+      fen.rows(m, U32.add(f, 1), r, 0, acc ++ B.fen.gap(e) ++ B.fen.pchar(U32.to_nat(v)))
+
 # the FEN of the current position (ep square shown whenever set)
 def fen.out(m: Array<U32>, +p: B.Pos) -> Array<U32> & String:
   B.fen.out.b(p, fen.rows(m, 0, 7, 0, ""))
@@ -315,20 +315,6 @@ def legal.a(+mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & Bool:
 
 def is_legal(m: Array<U32>, +p: B.Pos, +mv: U32) -> Array<U32> & Bool:
   legal.a(mv, B.make(m, p, mv))
-
-def find.w?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, +mv: U32, hit: Bool, m: Array<U32>) ->
-  Array<U32> & U32:
-  match hit:
-    case True{}:
-      find.x(p, k, base, i, n, mv, is_legal(m, p, mv))
-    case False{}:
-      find.go(m, p, k, base, U32.add(i, 1), n)
-
-# find the legal move whose UCI key is k among the n moves at base; 0 if none
-def find.v?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +mv) = r
-  find.w(p, k, base, i, n, mv, U32.is_eq(B.mv.ukey(mv), k), m)
 
 def find.go.b?(m: Array<U32>, +p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, go: Bool) ->
   Array<U32> & U32:
@@ -349,6 +335,20 @@ def find.x?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, +mv: U32, r: Array
     case (m, False{}):
       find.go(m, p, k, base, U32.add(i, 1), n)
 
+def find.w?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, +mv: U32, hit: Bool, m: Array<U32>) ->
+  Array<U32> & U32:
+  match hit:
+    case True{}:
+      find.x(p, k, base, i, n, mv, is_legal(m, p, mv))
+    case False{}:
+      find.go(m, p, k, base, U32.add(i, 1), n)
+
+# find the legal move whose UCI key is k among the n moves at base; 0 if none
+def find.v?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +mv) = r
+  find.w(p, k, base, i, n, mv, U32.is_eq(B.mv.ukey(mv), k), m)
+
 def find.gen(+p: B.Pos, +k: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
   find.go(m, p, k, base, 0, n)
@@ -359,16 +359,21 @@ def find_move(m: Array<U32>, +p: B.Pos, s: String, +ply: U32) -> Array<U32> & U3
   +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
   find.gen(p, B.uci.key(s), base, gen(m, p, base, 0))
 
+def perft.chk?(+p: B.Pos, +depth: U32, +ply: U32, r: Array<U32> & Bool) -> Array<U32> & U32:
+  (m, +chk) = r
+  +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
+  perft.gen(p, depth, ply, base, chk, gen(m, p, base, 0))
+
+# number of leaf nodes of the legal move tree of the given depth (>= 1)
+def perft?(m: Array<U32>, +p: B.Pos, +depth: U32, +ply: U32) -> Array<U32> & U32:
+  perft.chk(p, depth, ply, in_check(m, p))
+
 # Perft
 # -----
 
 def perft.next?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, +i: U32, +n: U32, +acc: U32,
                 m: Array<U32>) -> Array<U32> & U32:
   perft.loop(m, p, depth, ply, base, chk, U32.add(i, 1), n, acc, U32.is_lt(U32.add(i, 1), n))
-
-# number of leaf nodes of the legal move tree of the given depth (>= 1)
-def perft?(m: Array<U32>, +p: B.Pos, +depth: U32, +ply: U32) -> Array<U32> & U32:
-  perft.chk(p, depth, ply, in_check(m, p))
 
 def perft.add?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, +i: U32, +n: U32, +acc: U32,
                +mv: U32, +np: B.Pos, r: Array<U32> & U32) -> Array<U32> & U32:
@@ -392,50 +397,68 @@ def perft.legal?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, +i: 
     case (m, False{}):
       perft.sub(p, depth, ply, base, chk, i, n, acc, mv, np, m, U32.is_eq(depth, 1))
 
-def first.d?(m: Array<U32>, +t: U32, +d: U32, +v: U32, ok: Bool, empty: Bool) -> Array<U32> & U32:
-  match ok empty:
-    case False{} _:
-      (m, 0)
-    case True{} False{}:
-      (m, U32.or(v, U32.shln(t, 8n)))
-    case True{} True{}:
-      first(m, t, d)
+# direction index (dir() order) of a 0x88 king/queen step
+def step.dir.t(n: Nat) -> U32:
+  match n:
+    case 33n:
+      0
+    case 1n:
+      1
+    case 18n:
+      2
+    case 16n:
+      3
+    case 34n:
+      4
+    case 32n:
+      5
+    case 0n:
+      6
+    case _:
+      7
 
-def first.c?(+t: U32, +d: U32, ok: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
+def step.dir(+step: U32) -> U32:
+  step.dir.t(U32.to_nat(U32.and(U32.add(step, 17), 255)))
+
+# the first piece along `step` from s (exclusive), packed piece | sq << 8,
+# 0 when none: from the ray tables on the occupancy (no ray walk, so the
+# legality and gives-check tests below stay loop-free and inline)
+def first.r(+s: U32, +b: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
-  first.d(m, t, d, v, ok, U32.is_zero(v))
+  (m, C.sel(U32.is_eq(b, 64), 0, U32.or(v, U32.shln(s, 8n))))
 
-# the first piece along step d from s (exclusive), packed piece | sq << 8;
-# 0 when the ray leaves the board first
-def first?(m: Array<U32>, +s: U32, +d: U32) -> Array<U32> & U32:
-  +t = U32.add(s, d)
-  first.c(t, d, C.sq.ok(t), m[C.sq.safe(t)])
+def first(m: Array<U32>, +s: U32, +step: U32, +ol: U32, +oh: U32) -> Array<U32> & U32:
+  +b = B.blocker(step.dir(step), C.sq.to64(s), ol, oh)
+  +t = C.sq.from64(U32.and(b, 63))
+  first.r(t, b, m[t])
 
-def line.att.b(m: Array<U32>, +s: U32, +info: U32, +lineb: U32, +c: U32, aligned: Bool) -> Array<U32> & Bool:
+def line.att.b(m: Array<U32>, +s: U32, +info: U32, +lineb: U32, +c: U32, +ol: U32, +oh: U32, aligned: Bool) ->
+  Array<U32> & Bool:
   match aligned:
     case False{}:
       (m, False{})
     case True{}:
-      B.ray.hit(c, lineb, first(m, s, B.dstep(info)))
+      B.ray.hit(c, lineb, first(m, s, B.dstep(info), ol, oh))
 
 # a colour-c slider attacks square s through the line toward `via`?
-def line.att(m: Array<U32>, +s: U32, +via: U32, +c: U32) -> Array<U32> & Bool:
+# (ol, oh): the occupancy
+def line.att(m: Array<U32>, +s: U32, +via: U32, +c: U32, +ol: U32, +oh: U32) -> Array<U32> & Bool:
   +info = B.dinfo(s, via)
   +lineb = U32.and(info, 24)
-  line.att.b(m, s, info, lineb, c, U32.is_ne(lineb, 0))
-
-def illegal.b(m: Array<U32>, +np: B.Pos, +mv: U32, +k: U32, +mover: U32, full: Bool) -> Array<U32> & Bool:
-  match full:
-    case True{}:
-      left_in_check(m, np)
-    case False{}:
-      line.att(m, k, C.mv.from(mv), C.opp(mover))
+  line.att.b(m, s, info, lineb, c, ol, oh, U32.is_ne(lineb, 0))
 
 # Legality after make(): mv was played from position p (chk: was the
 # mover in check before it). Answers True when the move is ILLEGAL.
 # Only king moves, en passant and check evasions need a full attack scan;
 # any other move can only be illegal by uncovering an attack on the
-# king through its origin square (a pin), which is one ray walk.
+# king through its origin square (a pin): one ray-table lookup.
+def illegal.b(m: Array<U32>, +np: B.Pos, +mv: U32, +k: U32, +mover: U32, full: Bool) -> Array<U32> & Bool:
+  match full:
+    case True{}:
+      left_in_check(m, np)
+    case False{}:
+      line.att(m, k, C.mv.from(mv), C.opp(mover), B.occ.all.lo(B.P.occ(np)), B.occ.all.hi(B.P.occ(np)))
+
 def illegal(m: Array<U32>, +np: B.Pos, +mv: U32, +chk: Bool) -> Array<U32> & Bool:
   +mover = C.opp(B.P.side(np))
   +k = B.P.king(np, mover)
@@ -464,21 +487,6 @@ def perft.gen?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, r: Arr
   (m, +n) = r
   perft.loop(m, p, depth, ply, base, chk, 0, n, 0, U32.is_lt(0, n))
 
-def perft.chk?(+p: B.Pos, +depth: U32, +ply: U32, r: Array<U32> & Bool) -> Array<U32> & U32:
-  (m, +chk) = r
-  +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
-  perft.gen(p, depth, ply, base, chk, gen(m, p, base, 0))
-
-def divide.made?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
-                 +mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & String:
-  (m, +np) = r
-  divide.legal(p, depth, base, i, n, acc, tot, mv, np, left_in_check(m, np))
-
-def divide.mv?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
-               r: Array<U32> & U32) -> Array<U32> & String:
-  (m, +mv) = r
-  divide.made(p, depth, base, i, n, acc, tot, mv, B.make(m, p, mv))
-
 def divide.loop.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String,
                    +tot: U32, go: Bool) -> Array<U32> & String:
   match go:
@@ -506,6 +514,16 @@ def divide.legal?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: Str
     case (m, False{}):
       divide.add(p, depth, base, i, n, acc, tot, mv, np, perft(m, np, U32.sub(depth, 1), 1))
 
+def divide.made?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
+                 +mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & String:
+  (m, +np) = r
+  divide.legal(p, depth, base, i, n, acc, tot, mv, np, left_in_check(m, np))
+
+def divide.mv?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
+               r: Array<U32> & U32) -> Array<U32> & String:
+  (m, +mv) = r
+  divide.made(p, depth, base, i, n, acc, tot, mv, B.make(m, p, mv))
+
 def divide.gen?(+p: B.Pos, +depth: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +n) = r
   divide.loop(m, p, depth, base, 0, n, "", 0)
@@ -513,51 +531,6 @@ def divide.gen?(+p: B.Pos, +depth: U32, +base: U32, r: Array<U32> & U32) -> Arra
 def divide?(m: Array<U32>, +p: B.Pos, +depth: U32) -> Array<U32> & String:
   +base = B.MOVES()
   divide.gen(p, depth, base, gen(m, p, base, 0))
-
-def gchk.d(m: Array<U32>, +k: U32, +mover: U32, +from: U32, hit: Bool) -> Array<U32> & Bool:
-  match hit:
-    case True{}:
-      (m, True{})
-    case False{}:
-      line.att(m, k, from, mover)
-
-def gchk.c(+k: U32, +mover: U32, +from: U32, r: Array<U32> & U32) -> Array<U32> & Bool:
-  (m, +found) = r
-  gchk.d(m, k, mover, from, U32.is_eq(U32.shrn(found, 8n), k))
-
-def gchk.b(m: Array<U32>, +k: U32, +mover: U32, +to: U32, +from: U32, +info: U32, leap: Bool, slide: Bool) ->
-  Array<U32> & Bool:
-  match leap slide:
-    case True{} _:
-      (m, True{})
-    case False{} True{}:
-      gchk.c(k, mover, from, first(m, to, B.dstep(info)))
-    case False{} False{}:
-      line.att(m, k, from, mover)
-
-def gchk.a(m: Array<U32>, +np: B.Pos, +mv: U32, special: Bool) -> Array<U32> & Bool:
-  match special:
-    case True{}:
-      in_check(m, np)
-    case False{}:
-      +them = B.P.side(np)
-      +mover = C.opp(them)
-      +k = B.P.king(np, them)
-      +to = C.mv.to(mv)
-      +pc = C.sel(C.mv.is_promo(mv), C.pc.make(mover, C.mv.promo_type(mv)), B.P.mvd(np))
-      +t = C.pc.type(pc)
-      +info = B.dinfo(to, k)
-      +lineb = U32.and(info, 24)
-      +leap = (U32.is_eq(t, 1) && U32.is_ne(U32.and(info, C.sel(U32.is_zero(mover), 1, 2)), 0)) ||
-        (U32.is_eq(t, 2) && U32.is_ne(U32.and(info, 4), 0))
-      +slide = U32.is_ne(lineb, 0) && (U32.is_eq(t, 5) || (U32.is_eq(t, 3) && U32.is_eq(lineb, 8)) ||
-        (U32.is_eq(t, 4) && U32.is_eq(lineb, 16)))
-      gchk.b(m, k, mover, to, C.mv.from(mv), info, leap, slide)
-
-# Does mv (already made, giving np) check the side now to move?
-def gchk(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
-  +fl = C.mv.flag(mv)
-  gchk.a(m, np, mv, U32.is_eq(fl, 2) || U32.is_eq(fl, 3))
 
 def SEEG() -> U32:
   U32.add(B.SC(), 3100)
@@ -612,21 +585,6 @@ def cx.to(+cx: U32) -> U32:
 def cx.by(+cx: U32) -> U32:
   U32.and(U32.shrn(cx, 8n), 1)
 
-def lva.p?(+cx: U32, +ol: U32, +oh: U32, +st: U32, +s: U32, +valid: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +pc) = r
-  +j = U32.and(st, 31)
-  +t = C.pc.type(pc)
-  +en = U32.to_nat(lva.ent(j))
-  +ok = valid && U32.is_ne(pc, 0) && U32.is_eq(C.pc.color(pc), cx.by(cx)) &&
-    (U32.is_eq(t, B.att.w1(en)) || U32.is_eq(t, B.att.w2(en)))
-  +better = ok && U32.is_lt(see.val(U32.to_nat(t)), st.bestv(st))
-  lva.k(m, cx, ol, oh, C.sel(better, U32.or(U32.add(j, 1), U32.shln(U32.or(pc, U32.shln(s, 8n)), 5n)),
-    U32.add(st, 1)))
-
-def lva.leap?(m: Array<U32>, +cx: U32, +ol: U32, +oh: U32, +st: U32) -> Array<U32> & U32:
-  +s = U32.add(cx.to(cx), B.neg_if(B.att.off(U32.to_nat(U32.and(st, 31))), cx.by(cx)))
-  lva.p(cx, ol, oh, st, s, C.sq.ok(s) && B.occ.has(ol, oh, s), m[C.sq.safe(s)])
-
 def lva.slide?(m: Array<U32>, +cx: U32, +ol: U32, +oh: U32, +st: U32) -> Array<U32> & U32:
   +b = B.blocker(lva.dir(U32.and(st, 31), cx.by(cx)), C.sq.to64(cx.to(cx)), ol, oh)
   +s = C.sq.from64(U32.and(b, 63))
@@ -664,6 +622,21 @@ def lva.k?(m: Array<U32>, +cx: U32, +ol: U32, +oh: U32, +st0: U32) -> Array<U32>
   +st = U32.or(U32.and(st0, U32.not(31)), j)
   lva.go(m, cx, ol, oh, st, U32.is_lt(j, 19) && U32.is_gt(st.bestv(st), lva.min(j)))
 
+def lva.p?(+cx: U32, +ol: U32, +oh: U32, +st: U32, +s: U32, +valid: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +pc) = r
+  +j = U32.and(st, 31)
+  +t = C.pc.type(pc)
+  +en = U32.to_nat(lva.ent(j))
+  +ok = valid && U32.is_ne(pc, 0) && U32.is_eq(C.pc.color(pc), cx.by(cx)) &&
+    (U32.is_eq(t, B.att.w1(en)) || U32.is_eq(t, B.att.w2(en)))
+  +better = ok && U32.is_lt(see.val(U32.to_nat(t)), st.bestv(st))
+  lva.k(m, cx, ol, oh, C.sel(better, U32.or(U32.add(j, 1), U32.shln(U32.or(pc, U32.shln(s, 8n)), 5n)),
+    U32.add(st, 1)))
+
+def lva.leap?(m: Array<U32>, +cx: U32, +ol: U32, +oh: U32, +st: U32) -> Array<U32> & U32:
+  +s = U32.add(cx.to(cx), B.neg_if(B.att.off(U32.to_nat(U32.and(st, 31))), cx.by(cx)))
+  lva.p(cx, ol, oh, st, s, C.sq.ok(s) && B.occ.has(ol, oh, s), m[C.sq.safe(s)])
+
 def lva.any?(m: Array<U32>, +cx: U32, +ol: U32, +oh: U32, any: Bool) -> Array<U32> & U32:
   match any:
     case False{}:
@@ -693,6 +666,15 @@ def lva?(m: Array<U32>, +to: U32, +by: U32, +ol: U32, +oh: U32, +p: B.Pos) -> Ar
   lva.m(m, to, by, ol, oh, C.sel(U32.is_zero(by), B.P.wk(p), B.P.bk(p)), U32.and(B.occ.col.lo(o, by), ol),
     U32.and(B.occ.col.hi(o, by), oh), B.occ.pawn.lo(o, by), B.occ.pawn.hi(o, by), C.sq.to64(to))
 
+def see.back.c?(+d: U32, +ga: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +gb) = r
+  m[U32.add(SEEG(), U32.sub(d, 2))] <- C.s.neg(C.s.max(C.s.neg(ga), gb))
+  see.back(m, U32.sub(d, 1))
+
+def see.back.b?(+d: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +ga) = r
+  see.back.c(d, ga, m[U32.add(SEEG(), U32.sub(d, 1))])
+
 def see.back.go?(m: Array<U32>, +d: U32, go: Bool) -> Array<U32> & U32:
   match go:
     case True{}:
@@ -703,24 +685,6 @@ def see.back.go?(m: Array<U32>, +d: U32, go: Bool) -> Array<U32> & U32:
 # fold the gain list back (gain[d-1] = -max(-gain[d-1], gain[d]))
 def see.back?(m: Array<U32>, +d: U32) -> Array<U32> & U32:
   see.back.go(m, d, U32.is_gt(d, 1))
-
-def see.back.c?(+d: U32, +ga: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +gb) = r
-  m[U32.add(SEEG(), U32.sub(d, 2))] <- C.s.neg(C.s.max(C.s.neg(ga), gb))
-  see.back(m, U32.sub(d, 1))
-
-def see.back.b?(+d: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +ga) = r
-  see.back.c(d, ga, m[U32.add(SEEG(), U32.sub(d, 1))])
-
-def see.l2?(+to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, +oh: U32, +p: B.Pos,
-            r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +f) = r
-  see.l2.b(m, to, stm, d, cur, ol, oh, p, f, U32.is_zero(f) || U32.is_ge(d, 30))
-
-def see.loop?(m: Array<U32>, +to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, +oh: U32, +p: B.Pos) ->
-  Array<U32> & U32:
-  see.l2(to, stm, d, cur, ol, oh, p, lva(m, to, stm, ol, oh, p))
 
 def see.l3?(+to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, +oh: U32, +p: B.Pos, +f: U32,
             r: Array<U32> & U32) -> Array<U32> & U32:
@@ -737,6 +701,15 @@ def see.l2.b?(m: Array<U32>, +to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, 
       see.back(m, d)
     case False{}:
       see.l3(to, stm, d, cur, ol, oh, p, f, m[U32.add(SEEG(), U32.sub(d, 1))])
+
+def see.l2?(+to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, +oh: U32, +p: B.Pos,
+            r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +f) = r
+  see.l2.b(m, to, stm, d, cur, ol, oh, p, f, U32.is_zero(f) || U32.is_ge(d, 30))
+
+def see.loop?(m: Array<U32>, +to: U32, +stm: U32, +d: U32, +cur: U32, +ol: U32, +oh: U32, +p: B.Pos) ->
+  Array<U32> & U32:
+  see.l2(to, stm, d, cur, ol, oh, p, lva(m, to, stm, ol, oh, p))
 
 # when the capturer is worth no more than the victim the exchange cannot
 # lose material: answer the victim's value without playing it out
@@ -770,3 +743,75 @@ def see.k?(m: Array<U32>, +p: B.Pos, +mv: U32, special: Bool) -> Array<U32> & U3
 # are answered optimistically (as the plain victim value + promotion gain)
 def see?(m: Array<U32>, +p: B.Pos, +mv: U32) -> Array<U32> & U32:
   see.k(m, p, mv, U32.is_ge(C.mv.flag(mv), 3))
+
+def gchk.d(m: Array<U32>, +k: U32, +mover: U32, +from: U32, +ol: U32, +oh: U32, hit: Bool) -> Array<U32> & Bool:
+  match hit:
+    case True{}:
+      (m, True{})
+    case False{}:
+      line.att(m, k, from, mover, ol, oh)
+
+def gchk.b(m: Array<U32>, +k: U32, +mover: U32, +to: U32, +from: U32, +info: U32, +ol: U32, +oh: U32,
+           leap: Bool, slide: Bool) -> Array<U32> & Bool:
+  match leap slide:
+    case True{} _:
+      (m, True{})
+    case False{} True{}:
+      gchk.d(m, k, mover, from, ol, oh,
+        U32.is_eq(B.blocker(step.dir(B.dstep(info)), C.sq.to64(to), ol, oh), C.sq.to64(k)))
+    case False{} False{}:
+      line.att(m, k, from, mover, ol, oh)
+
+def gchk.a(m: Array<U32>, +np: B.Pos, +mv: U32, special: Bool) -> Array<U32> & Bool:
+  match special:
+    case True{}:
+      in_check(m, np)
+    case False{}:
+      +them = B.P.side(np)
+      +mover = C.opp(them)
+      +k = B.P.king(np, them)
+      +to = C.mv.to(mv)
+      +pc = C.sel(C.mv.is_promo(mv), C.pc.make(mover, C.mv.promo_type(mv)), B.P.mvd(np))
+      +t = C.pc.type(pc)
+      +info = B.dinfo(to, k)
+      +lineb = U32.and(info, 24)
+      +leap = (U32.is_eq(t, 1) && U32.is_ne(U32.and(info, C.sel(U32.is_zero(mover), 1, 2)), 0)) ||
+        (U32.is_eq(t, 2) && U32.is_ne(U32.and(info, 4), 0))
+      +slide = U32.is_ne(lineb, 0) && (U32.is_eq(t, 5) || (U32.is_eq(t, 3) && U32.is_eq(lineb, 8)) ||
+        (U32.is_eq(t, 4) && U32.is_eq(lineb, 16)))
+      gchk.b(m, k, mover, to, C.mv.from(mv), info, B.occ.all.lo(B.P.occ(np)), B.occ.all.hi(B.P.occ(np)), leap, slide)
+
+# Does mv (already made, giving np) check the side now to move?
+def gchk(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
+  +fl = C.mv.flag(mv)
+  gchk.a(m, np, mv, U32.is_eq(fl, 2) || U32.is_eq(fl, 3))
+
+# the cheap parts of illegal() / gchk(), split so callers can branch on
+# them and keep the common path free of the looping full attack scans
+def illegal.full(+np: B.Pos, +mv: U32, +chk: Bool) -> Bool:
+  chk || U32.is_eq(C.mv.flag(mv), 3) || U32.is_eq(B.P.king(np, C.opp(B.P.side(np))), C.mv.to(mv))
+
+# pin test for a move that is not a king move, ep or evasion
+def pin.ill(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
+  +mover = C.opp(B.P.side(np))
+  line.att(m, B.P.king(np, mover), C.mv.from(mv), B.P.side(np), B.occ.all.lo(B.P.occ(np)),
+    B.occ.all.hi(B.P.occ(np)))
+
+def gchk.special(+mv: U32) -> Bool:
+  U32.is_eq(C.mv.flag(mv), 2) || U32.is_eq(C.mv.flag(mv), 3)
+
+# gives check, for a move that is not castling or ep
+def gchk.fast(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
+  +them = B.P.side(np)
+  +mover = C.opp(them)
+  +k = B.P.king(np, them)
+  +to = C.mv.to(mv)
+  +pc = C.sel(C.mv.is_promo(mv), C.pc.make(mover, C.mv.promo_type(mv)), B.P.mvd(np))
+  +t = C.pc.type(pc)
+  +info = B.dinfo(to, k)
+  +lineb = U32.and(info, 24)
+  +leap = (U32.is_eq(t, 1) && U32.is_ne(U32.and(info, C.sel(U32.is_zero(mover), 1, 2)), 0)) ||
+    (U32.is_eq(t, 2) && U32.is_ne(U32.and(info, 4), 0))
+  +slide = U32.is_ne(lineb, 0) && (U32.is_eq(t, 5) || (U32.is_eq(t, 3) && U32.is_eq(lineb, 8)) ||
+    (U32.is_eq(t, 4) && U32.is_eq(lineb, 16)))
+  gchk.b(m, k, mover, to, C.mv.from(mv), info, B.occ.all.lo(B.P.occ(np)), B.occ.all.hi(B.P.occ(np)), leap, slide)
