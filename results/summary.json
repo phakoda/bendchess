@@ -1,0 +1,34 @@
+{
+ "cas1_nodes": {
+  "games": 200,
+  "wins": 82,
+  "draws": 73,
+  "losses": 45,
+  "score": 0.5925,
+  "elo": 65.02429664245847,
+  "elo_lo": 27.007299918808364,
+  "elo_hi": 104.65236216841672,
+  "preliminary": false,
+  "a": "bend:Complexity=1,NodesTime=100",
+  "b": "bend:Complexity=0,NodesTime=100",
+  "limits": {
+   "nodes": 0,
+   "nodes2": 0,
+   "movetime": 0,
+   "movetime2": 0,
+   "tc": "20+0.2"
+  },
+  "a_avg_depth": 8.133689000470737,
+  "a_avg_nodes": 46553.08300643339,
+  "a_avg_time": 0.46553083006433393,
+  "wall_seconds": 705.2595858573914,
+  "terminations": {
+   "checkmate": 127,
+   "threefold_repetition": 57,
+   "insufficient_material": 10,
+   "fifty_moves": 6
+  },
+  "experiment": "cas1_nodes",
+  "minutes": 11.758126640319825
+ }
+}

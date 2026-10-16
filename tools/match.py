@@ -102,7 +102,7 @@ def play_game(args, spec_a, spec_b, fen, opening, a_white, game_no):
     if args.tc:
         base, _, inc = args.tc.partition("+")
         clocks = {chess.WHITE: float(base), chess.BLACK: float(base), "inc": float(inc or 0)}
-    stats = {"a_depth": [], "a_nodes": [], "a_time": []}
+    stats = {"a_depth": [], "a_nodes": [], "a_time": [], "b_depth": [], "b_nodes": [], "b_time": []}
     result, reason = "*", ""
     game_moves = []
     try:
@@ -135,10 +135,10 @@ def play_game(args, spec_a, spec_b, fen, opening, a_white, game_no):
                 result = "0-1" if board.turn == chess.WHITE else "1-0"
                 reason = f"illegal_move:{res.move}"
                 break
-            if is_a:
-                stats["a_depth"].append(res.info.get("depth", 0))
-                stats["a_nodes"].append(res.info.get("nodes", 0))
-                stats["a_time"].append(el)
+            side = "a" if is_a else "b"
+            stats[side + "_depth"].append(res.info.get("depth", 0))
+            stats[side + "_nodes"].append(res.info.get("nodes", 0))
+            stats[side + "_time"].append(el)
             game_moves.append(res.move)
             board.push(res.move)
     finally:
@@ -233,6 +233,9 @@ def main():
                       f"score {s['score']:.3f}", flush=True)
     results.sort(key=lambda r: r["game"])
     summ = elo_summary([r["points_a"] for r in results])
+    bdepth = [d for r in results for d in r["b_depth"]]
+    bnodes = [n for r in results for n in r["b_nodes"]]
+    btms = [t for r in results for t in r["b_time"]]
     depth = [d for r in results for d in r["a_depth"]]
     nodes = [n for r in results for n in r["a_nodes"]]
     tms = [t for r in results for t in r["a_time"]]
@@ -241,6 +244,10 @@ def main():
                  "a_avg_depth": sum(depth) / max(len(depth), 1),
                  "a_avg_nodes": sum(nodes) / max(len(nodes), 1),
                  "a_avg_time": sum(tms) / max(len(tms), 1),
+                 "b_avg_depth": sum(bdepth) / max(len(bdepth), 1),
+                 "b_avg_nodes": sum(bnodes) / max(len(bnodes), 1),
+                 "b_avg_time": sum(btms) / max(len(btms), 1),
+                 "a_total_nodes": sum(nodes), "b_total_nodes": sum(bnodes),
                  "wall_seconds": time.time() - t0,
                  "terminations": {}})
     for r in results:

@@ -39,41 +39,42 @@ def SELD() -> U32:
 # futility, futility and late-move pruning; cas: the experimental
 # complexity-aware reductions (see search.cas below).
 # nt: NodesTime, nodes per virtual millisecond (0: real clock)
+# ss: SoftScale, percent applied to the baseline's soft time limit
 type Opt is Data:
-  Opt{null: Bool, lmr: Bool, prune: Bool, cas: U32, evm: U32, nt: U32}
+  Opt{null: Bool, lmr: Bool, prune: Bool, cas: U32, evm: U32, nt: U32, ss: U32}
 
 def Opt.null(+o: Opt) -> Bool:
   match o:
-    case Opt{null, _, _, _, _, _}:
+    case Opt{null, _, _, _, _, _, _}:
       null
 
 def Opt.lmr(+o: Opt) -> Bool:
   match o:
-    case Opt{_, lmr, _, _, _, _}:
+    case Opt{_, lmr, _, _, _, _, _}:
       lmr
 
 def Opt.prune(+o: Opt) -> Bool:
   match o:
-    case Opt{_, _, prune, _, _, _}:
+    case Opt{_, _, prune, _, _, _, _}:
       prune
 
 def Opt.cas(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, cas, _, _}:
+    case Opt{_, _, _, cas, _, _, _}:
       cas
 
 def Opt.evm(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, evm, _}:
+    case Opt{_, _, _, _, evm, _, _}:
       evm
 
 def Opt.nt(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, _, nt}:
+    case Opt{_, _, _, _, _, nt, _}:
       nt
 
 def Opt.default() -> Opt:
-  Opt{True{}, True{}, True{}, 0, 1, 0}
+  Opt{True{}, True{}, True{}, 0, 1, 0, 100}
 
 # Small helpers
 # -------------
@@ -988,3 +989,8 @@ def clear(m: Array<U32>) -> Array<U32>:
   m = fill(m, B.TT(), U32.add(B.TT(), 4194304), 0)
   m = fill(m, B.HISTORY(), U32.add(B.HISTORY(), 32768), 0)
   fill(m, B.KILLERS(), U32.add(B.KILLERS(), 256), 0)
+
+def Opt.ss(+o: Opt) -> U32:
+  match o:
+    case Opt{_, _, _, _, _, _, ss}:
+      ss

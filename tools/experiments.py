@@ -31,6 +31,9 @@ EXPERIMENTS = {
     "cas3_nodes": ("bend:Complexity=3,NodesTime=%d" % NT, "bend:Complexity=2,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas2_vs0_nodes": ("bend:Complexity=2,NodesTime=%d" % NT, "bend:Complexity=0,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas3_vs0_nodes": ("bend:Complexity=3,NodesTime=%d" % NT, "bend:Complexity=0,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
+    # controls: does spending more of the bank (static soft-limit scale) explain CAS-1?
+    "soft130_vs0_nodes": ("bend:SoftScale=130,NodesTime=%d" % NT, "bend:Complexity=0,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
+    "cas1_vs_soft130_nodes": ("bend:Complexity=1,NodesTime=%d" % NT, "bend:SoftScale=130,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas1_wall": ("bend:Complexity=1", "bend:Complexity=0", ["--tc", WALL_TC]),
     "cas2_wall": ("bend:Complexity=2", "bend:Complexity=0", ["--tc", WALL_TC]),
     # ablations (fixed nodes per move): speculative pruning components

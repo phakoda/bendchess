@@ -271,19 +271,20 @@ def more.pick(baseline: Bool, a: Bool, b: Bool) -> Bool:
 #   x0.6; just changed or score dropped: x1.5), and an iteration whose
 #   predicted cost (last cost x observed growth factor) would overrun the
 #   hard limit is not started.
-def id.more(+cas: U32, +d: U32, +s: U32, +score0: U32, +changed: Bool, +stab: U32, +spent: U32, +sp: U32,
+def id.more(+cas: U32, +ss: U32, +d: U32, +s: U32, +score0: U32, +changed: Bool, +stab: U32, +spent: U32, +sp: U32,
             +ms: U32, +rate: U32, +lim: Lim, +stop: Bool, +used: U32) -> Bool:
   +base = Bool.not(stop) && U32.is_lt(d, Lim.maxd(lim)) && U32.is_lt(used, Lim.nodes(lim)) &&
     C.s.lt(C.s.abs(s), U32.sub(C.MATE(), U32.add(d, 2)))
   +drop = U32.is_gt(d, 1) && C.s.gt(U32.sub(score0, s), 25)
   +f = C.sel(changed || drop, 150, C.sel(U32.is_ge(stab, 3), 60, C.sel(U32.is_eq(stab, 2), 80, 100)))
   +soft = Lim.soft(lim)
+  +soft0 = C.sel(U32.is_gt(soft, 20000000), soft, U32.div(U32.mul(soft, ss), 100))
   +soft2 = U32.min(C.sel(U32.is_gt(soft, 20000000), soft, U32.div(U32.mul(soft, f), 100)),
     U32.max(U32.div(U32.mul(Lim.hard(lim), 8), 10), soft))
   +growth = U32.min(U32.max(U32.div(U32.mul(spent, 10), U32.max(sp, 1)), 15), 60)
   +pred_ms = U32.div(U32.div(U32.mul(U32.min(spent, 400000000), growth), 10), U32.max(rate, 1))
   +fits = U32.is_lt(d, 4) || U32.is_ge(Lim.hard(lim), BIG()) || U32.is_le(U32.add(ms, pred_ms), Lim.hard(lim))
-  more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft), base && U32.is_lt(ms, soft2) && fits)
+  more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft0), base && U32.is_lt(ms, soft2) && fits)
 
 def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat,
                 +chk: Bool, +used0: U32, +best0: U32, +score0: U32, +npms0: U32, +verbose: Bool,
@@ -301,7 +302,7 @@ def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim,
       +score2 = C.sel(stop, score0, s)
       +changed = U32.is_gt(d, 1) && U32.is_ne(best2, best0)
       +stab2 = C.sel(changed, 0, U32.add(stab, 1))
-      +more = id.more(S.Opt.cas(o), d, s, score0, changed, stab2, spent, sp, ms,
+      +more = id.more(S.Opt.cas(o), S.Opt.ss(o), d, s, score0, changed, stab2, spent, sp, ms,
         C.sel(U32.is_zero(nt), npms, nt), lim, stop, used)
       do IO<Array<U32> & (U32 & U32)>:
         say(verbose && (Bool.not(stop) || U32.is_eq(d, 1)), id.info(d, s, used, ms, seld, pv))
@@ -522,6 +523,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name EvalMode type spin default 1 min 0 max 2")
     IO.print("option name NodesTime type spin default 0 min 0 max 100000")
     IO.print("option name SyzygyPath type string default <empty>")
+    IO.print("option name SoftScale type spin default 100 min 10 max 1000")
     IO.print("uciok")
 
 def opt.bool(v: String) -> Bool:
@@ -536,13 +538,14 @@ def opt.pick(c: Bool, a: Bool, b: Bool) -> Bool:
 
 def opt.set.b(o: S.Opt, +name: String, +v: String) -> S.Opt:
   match o:
-    case S.Opt{null, lmr, prune, cas, evm, nt}:
+    case S.Opt{null, lmr, prune, cas, evm, nt, ss}:
       S.Opt{opt.pick(str.eq(name, "NullMove"), opt.bool(v), null),
         opt.pick(str.eq(name, "LMR"), opt.bool(v), lmr),
         opt.pick(str.eq(name, "Pruning"), opt.bool(v), prune),
         C.sel(str.eq(name, "Complexity"), B.str.u32(v, 0), cas),
         C.sel(str.eq(name, "EvalMode"), B.str.u32(v, 0), evm),
-        C.sel(str.eq(name, "NodesTime"), B.str.u32(v, 0), nt)}
+        C.sel(str.eq(name, "NodesTime"), B.str.u32(v, 0), nt),
+        C.sel(str.eq(name, "SoftScale"), B.str.u32(v, 100), ss)}
 
 # setoption name <N> value <V>
 def opt.set(o: S.Opt, toks: List<&2, String>) -> S.Opt:
