@@ -9,3 +9,4 @@ results/*.log
 results/matches_suite64/
 results/ab/*.json
 results/costmodel_raw.json
+results/magnus_v2.txt
