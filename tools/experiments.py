@@ -36,6 +36,7 @@ EXPERIMENTS = {
     "cas1_vs_soft130_nodes": ("bend:Complexity=1,NodesTime=%d" % NT, "bend:SoftScale=130,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas1_wall": ("bend:Complexity=1", "bend:Complexity=0", ["--tc", WALL_TC]),
     "cas2_wall": ("bend:Complexity=2", "bend:Complexity=0", ["--tc", WALL_TC]),
+    "cas3_wall": ("bend:Complexity=3", "bend:Complexity=0", ["--tc", WALL_TC]),
     # ablations (fixed nodes per move): speculative pruning components
     "abl_null": ("bend", "bend:NullMove=false", ["--nodes", "30000"]),
     "abl_lmr": ("bend", "bend:LMR=false", ["--nodes", "30000"]),
