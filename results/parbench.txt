@@ -1,0 +1,4 @@
+16 positions, go depth 13
+Threads 1: total 48.8 s, speedup 1.00x (geo-mean 1.00x), nodes 1.00x, same move 16/16
+Threads 2: total 41.2 s, speedup 1.18x (geo-mean 1.18x), nodes 0.99x, same move 11/16
+Threads 4: total 44.0 s, speedup 1.11x (geo-mean 1.08x), nodes 1.12x, same move 10/16
