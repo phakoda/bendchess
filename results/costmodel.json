@@ -1,0 +1,31 @@
+{
+ "features": [
+  "1",
+  "log2 g1",
+  "log2 g2",
+  "depth",
+  "best changed",
+  "log2(|dscore|+1)",
+  "log2 root moves"
+ ],
+ "coef": [
+  1.9065,
+  -0.4292,
+  -0.2034,
+  -0.0206,
+  -0.357,
+  -0.0398,
+  -0.0004
+ ],
+ "n_train": 4619,
+ "n_test": 1527,
+ "mae_bits_test": {
+  "engine rule (last growth clamped 1.5..6)": 1.119,
+  "constant (mean growth)": 0.814,
+  "learned linear model": 0.717
+ },
+ "underestimate_rate_test": {
+  "engine rule": 0.48,
+  "learned": 0.473
+ }
+}
