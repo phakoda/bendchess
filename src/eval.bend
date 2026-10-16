@@ -367,7 +367,7 @@ def eval.fin(+p: B.Pos, +ws: U32, r: Array<U32> & Ev) -> Array<U32> & U32:
 
 def eval.occ(m: Array<U32>, +p: B.Pos, +ws: U32, o: B.Occ) -> Array<U32> & U32:
   match o:
-    case B.Occ{+w0, +w1, +b0, +b1, +wp0, +wp1, +bp0, +bp1}:
+    case B.Occ{+w0, +w1, +b0, +b1, +wp0, +wp1, +bp0, +bp1, _}:
       +lo = U32.and(U32.or(w0, b0), U32.not(U32.or(wp0, bp0)))
       +hi = U32.and(U32.or(w1, b1), U32.not(U32.or(wp1, bp1)))
       +fl = U32.or(files(wp0, wp1), U32.shln(files(bp0, bp1), 8n))

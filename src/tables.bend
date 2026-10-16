@@ -4952,3 +4952,136 @@ def z_ep_hi(n: Nat) -> U32:
     case _:
       0
 
+def lmr_ln(n: Nat) -> U32:
+  match n:
+    case 0n:
+      0
+    case 1n:
+      0
+    case 2n:
+      118
+    case 3n:
+      187
+    case 4n:
+      237
+    case 5n:
+      275
+    case 6n:
+      306
+    case 7n:
+      332
+    case 8n:
+      355
+    case 9n:
+      375
+    case 10n:
+      393
+    case 11n:
+      409
+    case 12n:
+      424
+    case 13n:
+      438
+    case 14n:
+      450
+    case 15n:
+      462
+    case 16n:
+      473
+    case 17n:
+      484
+    case 18n:
+      493
+    case 19n:
+      503
+    case 20n:
+      511
+    case 21n:
+      520
+    case 22n:
+      528
+    case 23n:
+      535
+    case 24n:
+      542
+    case 25n:
+      549
+    case 26n:
+      556
+    case 27n:
+      562
+    case 28n:
+      569
+    case 29n:
+      575
+    case 30n:
+      580
+    case 31n:
+      586
+    case 32n:
+      591
+    case 33n:
+      597
+    case 34n:
+      602
+    case 35n:
+      607
+    case 36n:
+      612
+    case 37n:
+      616
+    case 38n:
+      621
+    case 39n:
+      625
+    case 40n:
+      630
+    case 41n:
+      634
+    case 42n:
+      638
+    case 43n:
+      642
+    case 44n:
+      646
+    case 45n:
+      650
+    case 46n:
+      653
+    case 47n:
+      657
+    case 48n:
+      661
+    case 49n:
+      664
+    case 50n:
+      668
+    case 51n:
+      671
+    case 52n:
+      674
+    case 53n:
+      678
+    case 54n:
+      681
+    case 55n:
+      684
+    case 56n:
+      687
+    case 57n:
+      690
+    case 58n:
+      693
+    case 59n:
+      696
+    case 60n:
+      699
+    case 61n:
+      702
+    case 62n:
+      704
+    case 63n:
+      707
+    case _:
+      0
+

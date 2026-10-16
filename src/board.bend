@@ -86,9 +86,10 @@ def mem.new() -> Array<U32>:
 # --------------
 
 # occupancy bitboards (0..63 indexing, a1 = 0), lo/hi halves per colour,
-# then the pawn bitboards of each colour (same layout)
+# then the pawn bitboards of each colour (same layout) and a Zobrist hash
+# of the pawns alone (pawn structure key)
 type Occ is Data:
-  Occ{w0: U32, w1: U32, b0: U32, b1: U32, wp0: U32, wp1: U32, bp0: U32, bp1: U32}
+  Occ{w0: U32, w1: U32, b0: U32, b1: U32, wp0: U32, wp1: U32, bp0: U32, bp1: U32, pk: U32}
 
 type Pos is Data:
   Pos{side: U32, castle: U32, ep: U32, half: U32, hidx: U32, wk: U32, bk: U32,
@@ -262,26 +263,28 @@ def bit64(+s: U32) -> U32:
 # toggle square s for colour c when `on` (and s is on the board)
 def occ.tog(o: Occ, +c: U32, +s: U32, +on: Bool) -> Occ:
   match o:
-    case Occ{w0, w1, b0, b1, wp0, wp1, bp0, bp1}:
+    case Occ{w0, w1, b0, b1, wp0, wp1, bp0, bp1, pk}:
       +i = C.sq.to64(s)
       +b = U32.and(bit64(s), C.bmask(on && C.sq.ok(s)))
       +hi = U32.is_ge(i, 32)
       +white = U32.is_zero(c)
       Occ{U32.xor(w0, C.sel(white && Bool.not(hi), b, 0)), U32.xor(w1, C.sel(white && hi, b, 0)),
         U32.xor(b0, C.sel(Bool.not(white) && Bool.not(hi), b, 0)), U32.xor(b1, C.sel(Bool.not(white) && hi, b, 0)),
-        wp0, wp1, bp0, bp1}
+        wp0, wp1, bp0, bp1, pk}
 
 # toggle the pawn bitboard of colour c at square s when `on`
 def occ.ptog(o: Occ, +c: U32, +s: U32, +on: Bool) -> Occ:
   match o:
-    case Occ{w0, w1, b0, b1, wp0, wp1, bp0, bp1}:
+    case Occ{w0, w1, b0, b1, wp0, wp1, bp0, bp1, pk}:
       +i = C.sq.to64(s)
-      +b = U32.and(bit64(s), C.bmask(on && C.sq.ok(s)))
+      +ok = on && C.sq.ok(s)
+      +b = U32.and(bit64(s), C.bmask(ok))
       +hi = U32.is_ge(i, 32)
       +white = U32.is_zero(c)
       Occ{w0, w1, b0, b1,
         U32.xor(wp0, C.sel(white && Bool.not(hi), b, 0)), U32.xor(wp1, C.sel(white && hi, b, 0)),
-        U32.xor(bp0, C.sel(Bool.not(white) && Bool.not(hi), b, 0)), U32.xor(bp1, C.sel(Bool.not(white) && hi, b, 0))}
+        U32.xor(bp0, C.sel(Bool.not(white) && Bool.not(hi), b, 0)), U32.xor(bp1, C.sel(Bool.not(white) && hi, b, 0)),
+        U32.xor(pk, U32.and(zt.lo(C.pc.make(c, 1), s), C.bmask(ok)))}
 
 # the state after mv, where pc is the moving piece and cap the captured one
 def Pos.after(+p: Pos, +mv: U32, +pc: U32, +cap: U32, +epok: Bool) -> Pos:
@@ -650,12 +653,12 @@ def chk.push(+base: U32, +n: U32, +mv: U32, r: Array<U32> & Bool) -> Array<U32> 
 
 def occ.lo(o: Occ, +c: U32) -> U32:
   match o:
-    case Occ{w0, w1, b0, b1, _, _, _, _}:
+    case Occ{w0, w1, b0, b1, _, _, _, _, _}:
       C.sel(U32.is_zero(c), w0, b0)
 
 def occ.hi(o: Occ, +c: U32) -> U32:
   match o:
-    case Occ{w0, w1, b0, b1, _, _, _, _}:
+    case Occ{w0, w1, b0, b1, _, _, _, _, _}:
       C.sel(U32.is_zero(c), w1, b1)
 
 # index of the lowest set bit of x (x != 0)
@@ -1003,14 +1006,14 @@ def popcnt(+x0: U32) -> U32:
 
 def npieces.o(o: Occ) -> U32:
   match o:
-    case Occ{w0, w1, b0, b1, _, _, _, _}:
+    case Occ{w0, w1, b0, b1, _, _, _, _, _}:
       U32.add(U32.add(popcnt(w0), popcnt(w1)), U32.add(popcnt(b0), popcnt(b1)))
 
 # a checksum of the pawn bitboards (debug output)
 def pawnsig.o(o: Occ) -> U32:
   match o:
-    case Occ{_, _, _, _, wp0, wp1, bp0, bp1}:
-      U32.xor(U32.xor(wp0, U32.mul(wp1, 3)), U32.xor(U32.mul(bp0, 5), U32.mul(bp1, 7)))
+    case Occ{_, _, _, _, wp0, wp1, bp0, bp1, pk}:
+      U32.xor(U32.xor(U32.xor(wp0, U32.mul(wp1, 3)), U32.xor(U32.mul(bp0, 5), U32.mul(bp1, 7))), U32.mul(pk, 11))
 
 def pawnsig(+p: Pos) -> U32:
   pawnsig.o(P.occ(p))
@@ -1027,8 +1030,8 @@ def dead(+p: Pos) -> Bool:
 # a hash of the pawn structure (both colours)
 def pawnkey.o(o: Occ) -> U32:
   match o:
-    case Occ{_, _, _, _, wp0, wp1, bp0, bp1}:
-      C.mix(U32.xor(wp0, C.mix(U32.xor(wp1, C.mix(U32.xor(bp0, C.mix(U32.add(bp1, 1))))))))
+    case Occ{_, _, _, _, _, _, _, _, pk}:
+      pk
 
 def pawnkey(+p: Pos) -> U32:
   pawnkey.o(P.occ(p))

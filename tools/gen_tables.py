@@ -9,6 +9,7 @@ with a8 first (index 0), h1 last (index 63), as on the wiki.
 A 64..384-case Nat match compiles to a flat C if/else chain that clang turns
 into a lookup table; we measured it at C-array speed (see docs/PROGRESS.md).
 """
+import math
 import os
 
 MG_VAL = [82, 337, 365, 477, 1025, 0]
@@ -206,6 +207,12 @@ def zobrist_tables() -> str:
                       nat_table("z_castle_hi", ch), nat_table("z_ep_lo", el), nat_table("z_ep_hi", eh)])
 
 
+def lmr_table() -> str:
+    """ln(x) / 1.5 in 1/256 units for x < 64 (0 for x = 0): the late-move
+    reduction floor(0.75 + ln d * ln k / 2.25) is (192 * 256 + L(d) * L(k)) >> 16."""
+    return nat_table("lmr_ln", [round(math.log(x) / 1.5 * 256) if x > 0 else 0 for x in range(64)])
+
+
 def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     dst = os.path.join(here, "..", "src", "tables.bend")
@@ -223,6 +230,7 @@ def main() -> None:
         f.write(delta_table() + "\n")
         f.write(debruijn_table() + "\n")
         f.write(zobrist_tables() + "\n")
+        f.write(lmr_table() + "\n")
     print("wrote", os.path.normpath(dst))
 
 

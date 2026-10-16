@@ -18,6 +18,7 @@
 import Base
 import ./core.bend as C
 import ./board.bend as B
+import ./tables.bend as T
 import ./movegen.bend as G
 import ./eval.bend as E
 
@@ -493,7 +494,9 @@ def good_quiet(m: Array<U32>, +side: U32, +ply: U32, +depth: U32, +mv: U32, +pk:
 
 # reduction for the i-th legal move at depth d: 0.75 + ln d * ln i / 2.25
 def lmr.r(+d: U32, +i: U32) -> U32:
-  F32.to_u32((0.75 + F32.log(U32.to_f32(d)) * F32.log(U32.to_f32(i)) / 2.25 : F32))
+  +ld = T.lmr_ln(U32.to_nat(U32.min(d, 63)))
+  +li = T.lmr_ln(U32.to_nat(U32.min(i, 63)))
+  U32.shrn(U32.add(49152, U32.mul(ld, li)), 16n)
 
 # Node context and loop state
 # ---------------------------
