@@ -1,0 +1,6 @@
+ALL PROOFS CHECK
+Use --verdict for mathematical validity.
+
+real	9m24.566s
+user	7m39.429s
+sys	1m0.442s
