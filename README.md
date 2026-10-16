@@ -43,8 +43,13 @@ python3 tools/play.py --black --movetime 3000 --show-analysis
 
 UCI options: `NullMove`, `LMR`, `Pruning` (speculative pruning switches),
 `Complexity` 0-3 (the complexity-aware search policy, 0 = conventional
-baseline), `EvalMode` (0 full feature eval, 1 PeSTO only [default], 2 light),
-`NodesTime` (node clock for equal-node experiments), `SyzygyPath`.
+baseline), `TimePolicy` 1-3 (budget adaptation v1 [default]; v2 adds
+best-move node effort; v3 adds the learned iteration-cost model),
+`Threads` 1/2/4 (root-split parallel search), `Practical` 0-200 (margin in
+cp for the practical-difficulty move choice, Module 8; 0 = off),
+`EvalMode` (0 full feature eval, 1 PeSTO only [default], 2 light),
+`NodesTime` (node clock for equal-node experiments), `SoftScale`,
+`SyzygyPath`.
 
 Extra UCI commands: `d` (position, eval, incremental state), `features`
 (evaluation feature vector), and
