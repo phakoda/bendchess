@@ -573,7 +573,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name LMR type check default true")
     IO.print("option name Pruning type check default true")
     IO.print("option name Complexity type spin default 1 min 0 max 3")
-    IO.print("option name EvalMode type spin default 1 min 0 max 2")
+    IO.print("option name EvalMode type spin default 0 min 0 max 2")
     IO.print("option name NodesTime type spin default 0 min 0 max 100000")
     IO.print("option name SyzygyPath type string default <empty>")
     IO.print("option name SoftScale type spin default 100 min 10 max 1000")

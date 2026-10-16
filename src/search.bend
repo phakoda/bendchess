@@ -1513,7 +1513,7 @@ def Opt.mk(+null: Bool, +lmr: Bool, +prune: Bool, +cas: U32, +evm: U32, +nt: U32
   Opt{a, U32.or(U32.min(nt, 65535), U32.shln(U32.min(ss, 65535), 16n))}
 
 def Opt.default() -> Opt:
-  Opt.mk(True{}, True{}, True{}, 1, 1, 0, 100, 1, 1, 0)
+  Opt.mk(True{}, True{}, True{}, 1, 0, 0, 100, 1, 1, 0)
 
 def Nd.cm(+x: Nd) -> U32:
   match x:
