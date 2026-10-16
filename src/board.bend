@@ -248,11 +248,37 @@ def capsq(+mv: U32, +side: U32) -> U32:
   +t = C.mv.to(mv)
   C.sel(U32.is_eq(C.mv.flag(mv), 3), U32.sub(U32.add(t, U32.shln(side, 5n)), 16), t)
 
-def Pos.fin(+side: U32, +castle: U32, +ep: U32, +half: U32, +hidx: U32, +wk: U32,
-            +bk: U32, +cap: U32, +mvd: U32, occ: Occ, a: Acc) -> Pos:
+def Acc.hlo(+a: Acc) -> U32:
   match a:
-    case Acc{hlo, hhi, mg, eg, ph}:
-      Pos{side, castle, ep, half, hidx, wk, bk, hlo, hhi, mg, eg, ph, cap, mvd, occ}
+    case Acc{hlo, _, _, _, _}:
+      hlo
+
+def Acc.hhi(+a: Acc) -> U32:
+  match a:
+    case Acc{_, hhi, _, _, _}:
+      hhi
+
+def Acc.mg(+a: Acc) -> U32:
+  match a:
+    case Acc{_, _, mg, _, _}:
+      mg
+
+def Acc.eg(+a: Acc) -> U32:
+  match a:
+    case Acc{_, _, _, eg, _}:
+      eg
+
+def Acc.ph(+a: Acc) -> U32:
+  match a:
+    case Acc{_, _, _, _, ph}:
+      ph
+
+# (the accumulator is read through accessors, so that the Pos constructor
+# is built even when `a` is not yet a constructor: the make-move laws
+# normalize through it)
+def Pos.fin(+side: U32, +castle: U32, +ep: U32, +half: U32, +hidx: U32, +wk: U32,
+            +bk: U32, +cap: U32, +mvd: U32, occ: Occ, +a: Acc) -> Pos:
+  Pos{side, castle, ep, half, hidx, wk, bk, Acc.hlo(a), Acc.hhi(a), Acc.mg(a), Acc.eg(a), Acc.ph(a), cap, mvd, occ}
 
 # Occupancy bitboards
 # -------------------
@@ -286,6 +312,25 @@ def occ.ptog(o: Occ, +c: U32, +s: U32, +on: Bool) -> Occ:
         U32.xor(bp0, C.sel(Bool.not(white) && Bool.not(hi), b, 0)), U32.xor(bp1, C.sel(Bool.not(white) && hi, b, 0)),
         U32.xor(pk, U32.and(zt.lo(C.pc.make(c, 1), s), C.bmask(ok)))}
 
+# the rare parts of a move, behind one branch: the captured piece and
+# the castling rook (most moves are quiet non-castling moves)
+def acc.rare(+a: Acc, +cap: U32, +cs: U32, +rk: U32, +t: U32, go: Bool) -> Acc:
+  match go:
+    case False{}:
+      a
+    case True{}:
+      acc.tog(acc.tog(acc.tog(a, cap, cs, True{}), rk, C.castle.rook_from(t), True{}), rk, C.castle.rook_to(t), False{})
+
+def occ.rare(+o: Occ, +side: U32, +cs: U32, +cap: U32, +isc: Bool, +t: U32, go: Bool) -> Occ:
+  match go:
+    case False{}:
+      o
+    case True{}:
+      +o3 = occ.tog(o, C.opp(side), cs, U32.is_ne(cap, 0))
+      +o4 = occ.tog(o3, side, C.castle.rook_from(t), isc)
+      +o5 = occ.tog(o4, side, C.castle.rook_to(t), isc)
+      occ.ptog(o5, C.opp(side), cs, U32.is_eq(C.pc.type(cap), 1))
+
 # the state after mv, where pc is the moving piece and cap the captured one
 def Pos.after(+p: Pos, +mv: U32, +pc: U32, +cap: U32, +epok: Bool) -> Pos:
   match p:
@@ -309,21 +354,16 @@ def Pos.after(+p: Pos, +mv: U32, +pc: U32, +cap: U32, +epok: Bool) -> Pos:
       +hh = U32.xor(U32.xor(U32.xor(hhi, C.z.side.hi()),
         U32.xor(T.z_castle_hi(U32.to_nat(castle)), T.z_castle_hi(U32.to_nat(castle2)))),
         U32.xor(zt.ep.hi(ep), zt.ep.hi(ep2)))
+      +rare = U32.is_ne(cap, 0) || isc
       a0 = {Acc{hl, hh, mg, eg, ph} : Acc}
       a1 = acc.tog(a0, pc, f, True{})
       a2 = acc.tog(a1, npc, t, False{})
-      a3 = acc.tog(a2, cap, capsq(mv, side), True{})
-      a4 = acc.tog(a3, rk, C.castle.rook_from(t), True{})
-      a5 = acc.tog(a4, rk, C.castle.rook_to(t), False{})
       o1 = occ.tog(occ, side, f, True{})
       o2 = occ.tog(o1, side, t, True{})
-      o3 = occ.tog(o2, C.opp(side), capsq(mv, side), U32.is_ne(cap, 0))
-      o4 = occ.tog(o3, side, C.castle.rook_from(t), isc)
-      o5 = occ.tog(o4, side, C.castle.rook_to(t), isc)
-      o6 = occ.ptog(o5, side, f, isp)
+      o6 = occ.ptog(o2, side, f, isp)
       o7 = occ.ptog(o6, side, t, U32.is_eq(C.pc.type(npc), 1))
-      o8 = occ.ptog(o7, C.opp(side), capsq(mv, side), U32.is_eq(C.pc.type(cap), 1))
-      Pos.fin(C.opp(side), castle2, ep2, half2, U32.add(hidx, 1), wk2, bk2, cap, pc, o8, a5)
+      Pos.fin(C.opp(side), castle2, ep2, half2, U32.add(hidx, 1), wk2, bk2, cap, pc,
+        occ.rare(o7, side, capsq(mv, side), cap, isc, t, rare), acc.rare(a2, cap, capsq(mv, side), rk, t, rare))
 
 def make.c(+np: Pos, +mv: U32, +pc: U32, m: Array<U32>) -> Array<U32> & Pos:
   +side = C.opp(P.side(np))
