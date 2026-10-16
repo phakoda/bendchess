@@ -12,8 +12,8 @@ treats the two games of an opening (colours reversed) as one sample.
 |---|---|
 | Perft, standard positions (CPW start d1-6, Kiwipete d1-5, positions 3-6) | all exact (e.g. start d6 = 119,060,324; Kiwipete d5 = 193,690,690) |
 | Perft edge-case suite (illegal ep, castling through check, promotions, stalemate/checkmate) | 16/16 exact |
-| Random positions vs python-chess (perft 3) + FEN round trips | 338/338 checks pass (`tests/test_perft.py --random 150`) |
-| Engine tests (`tests/test_engine.py`) | mate/stalemate reporting, 50-move rule, dead positions, repetition bookkeeping, incremental hash/PeSTO/occupancy == recomputed (40 random games), move replay == python-chess FEN, deterministic search, ID sanity, warm-TT safety, known tactics, complexity counts and estimator accuracy - see section 6 |
+| Random positions vs python-chess (perft 3) + FEN round trips | 432/432 checks pass (`tests/test_perft.py --random 200`) |
+| Engine tests (`tests/test_engine.py`) | **23/23 pass**: mate/stalemate reporting, 50-move rule, dead positions, repetition bookkeeping, incremental hash/PeSTO/occupancy == recomputed (40 random games), move replay == python-chess FEN, deterministic search, ID sanity, warm-TT safety, known tactics, complexity counts and estimator accuracy - see section 6 |
 | Distinct positions from the start (complexity quantity B) | d3 = 5,362, d4 = 72,078 (match published values) |
 | Formal proofs (`bend PROOF.bend`) | **ALL PROOFS CHECK** (13 laws, 8 min 24 s; `results/proof_check.txt`) |
 
@@ -111,8 +111,12 @@ PeSTO-only (`EvalMode=1`); the feature evaluation stays available.
 Quantity A, log10 perft(5) extrapolated from exact counts at depths 1-3,
 on 8 varied positions: mean |error| **0.02** (largest 0.05), all inside the
 stated band. Quantity D (next-iteration node prediction) is printed with
-its actual/predicted ratio by `analyze`; quantities C is a heuristic and is
+its actual/predicted ratio by `analyze`; quantity C is a heuristic and is
 labelled as such.
+
+Tactical accuracy: 6/6 known positions (mates, tactics, mate/stalemate
+detection) and **53/60 (88%)** of Stockfish-derived "only-move" positions
+(one move >= 250 cp better than all others at depth 16) at 1 s/position.
 
 ## 7. Strength against external opponents
 
@@ -120,8 +124,26 @@ Preliminary calibration (16 games each, 10 s + 0.1 s, early engine
 version): +13 =1 -2 vs Stockfish 16 at UCI_Elo 2000; +8 =3 -5 vs UCI_Elo
 2400.
 
-**"Magnus Carlsen bot" match**: see section 8.
+## 8. Match vs a "Magnus Carlsen bot" (strength proxy)
 
-## 8. Match vs the Magnus-strength proxy
+No real Magnus bot is reachable offline (commercial bots are online
+services; his game collections could not be downloaded here). The opponent
+is a **strength proxy**: Stockfish 16 with `UCI_LimitStrength` and
+`UCI_Elo 2850` (about Carlsen's classical rating), at Stockfish's
+calibration time control of 60 s + 0.6 s per game, 4 games in parallel,
+100 games, 50 balanced openings x 2 colours (all 100 games distinct).
 
-PENDING
+| BendChess (default: Complexity=1, PeSTO eval) vs SF16 @ UCI_Elo 2850 | Result |
+|---|---|
+| Wins / draws / losses | **10 / 41 / 49** |
+| Score | 30.5% |
+| Elo difference | **-143** [-200, -93] (pairs: [-208, -86]) |
+| Terminations | 59 checkmates, 25 threefold, 9 fifty-move, 3 stalemate, 2 insufficient material, 2 max length; no time forfeits |
+| Average per move | BendChess depth 14.3, 825 k nodes, 1.22 s; Stockfish depth 30.9 (limited strength), 1.32 s |
+
+So BendChess **won 10 of 100 games** against this proxy and lost the match
+clearly: on Stockfish's UCI_Elo scale it sits roughly 140 points below
+2850 (very roughly ~2700 on that engine-calibrated scale, which is NOT a
+FIDE rating). Caveats: a strength-limited Stockfish is not Carlsen (it
+neither plays his openings nor errs like a human), and UCI_Elo is
+calibrated against engine rating lists, not FIDE.
