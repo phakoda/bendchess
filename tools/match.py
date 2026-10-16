@@ -167,6 +167,24 @@ def openings_plies(line):
     return line.split()
 
 
+def pair_interval(results):
+    """95% Elo interval from the variance of per-opening pair scores"""
+    pairs = {}
+    for r in results:
+        pairs.setdefault(r["opening"], []).append(r["points_a"])
+    ps = [sum(v) / len(v) for v in pairs.values()]
+    n = len(ps)
+    if n < 2:
+        return None
+    s = sum(ps) / n
+    se = math.sqrt(sum((p - s) ** 2 for p in ps) / (n - 1) / n)
+
+    def elo(x):
+        x = min(max(x, 1e-6), 1 - 1e-6)
+        return -400 * math.log10(1 / x - 1)
+    return {"pairs": n, "elo_lo_pairs": elo(s - 1.96 * se), "elo_hi_pairs": elo(s + 1.96 * se)}
+
+
 def elo_summary(points):
     n = len(points)
     if n == 0:
@@ -205,13 +223,20 @@ def main():
     ap.add_argument("--out", default="results")
     ap.add_argument("--event", default="BendChess match")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--book", default=os.path.join(ROOT, "tools", "book.epd"),
+                    help="EPD/FEN file of openings ('' = the 32-line suite)")
     args = ap.parse_args()
     if not (args.nodes or args.movetime or args.tc):
         args.movetime = 100
     spec_a, spec_b = parse_spec(args.a), parse_spec(args.b)
-    suite = openings.suite()
+    if args.book and os.path.exists(args.book):
+        suite = [(f"book#{i}", ln.strip()) for i, ln in enumerate(open(args.book)) if ln.strip()]
+    else:
+        suite = openings.suite()
     rng = random.Random(args.seed)
     rng.shuffle(suite)
+    if args.games > 2 * len(suite):
+        print(f"warning: {args.games} games but only {len(suite)} openings: games will repeat", flush=True)
     jobs = []
     for g in range(args.games):
         line, fen = suite[(g // 2) % len(suite)]
@@ -233,6 +258,8 @@ def main():
                       f"score {s['score']:.3f}", flush=True)
     results.sort(key=lambda r: r["game"])
     summ = elo_summary([r["points_a"] for r in results])
+    summ.update(pair_interval(results) or {})
+    summ["distinct_games"] = len({r["pgn"].split("\n\n", 1)[-1] for r in results})
     bdepth = [d for r in results for d in r["b_depth"]]
     bnodes = [n for r in results for n in r["b_nodes"]]
     btms = [t for r in results for t in r["b_time"]]

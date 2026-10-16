@@ -49,7 +49,7 @@ EXPERIMENTS = {
 
 def run(name, games, conc):
     a, b, lim = EXPERIMENTS[name]
-    tag = f"{name}"
+    tag = f"{name}_book"
     cmd = [sys.executable, os.path.join(ROOT, "tools", "match.py"), a, b, "--games", str(games),
            "--concurrency", str(conc), "--out", os.path.join(ROOT, "results", "matches"), "--tag", tag,
            "--event", name] + lim
@@ -60,10 +60,12 @@ def run(name, games, conc):
     res["minutes"] = (time.time() - t0) / 60
     path = os.path.join(ROOT, "results", "summary.json")
     allr = json.load(open(path)) if os.path.exists(path) else {}
-    allr[name] = res
+    allr[name + "_book"] = res
     json.dump(allr, open(path, "w"), indent=1)
     print(f"{name}: A={a} B={b} {' '.join(lim)} -> +{res['wins']} ={res['draws']} -{res['losses']} "
           f"score {res['score']:.3f} Elo {res['elo']:+.0f} [{res['elo_lo']:+.0f}, {res['elo_hi']:+.0f}] "
+          f"pair-CI [{res.get('elo_lo_pairs', 0):+.0f}, {res.get('elo_hi_pairs', 0):+.0f}] distinct {res.get('distinct_games')} "
+          f"nodes A/B {res.get('a_total_nodes', 0) / max(res.get('b_total_nodes', 1), 1):.3f} "
           f"({res['minutes']:.0f} min)", flush=True)
 
 
