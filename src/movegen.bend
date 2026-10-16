@@ -10,10 +10,6 @@ import ./core.bend as C
 import ./tables.bend as T
 import ./board.bend as B
 
-def att.ray?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32) ->
-  Array<U32> & Bool:
-  att.ray.c(t, d, w1, w2, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
-
 # reads finished: decide the probe
 def att.ray.d?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, +v: U32,
                ok: Bool, empty: Bool) -> Array<U32> & Bool:
@@ -30,6 +26,17 @@ def att.ray.c?(+t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, ok: Bool,
   (m, +v) = r
   att.ray.d(m, t, d, w1, w2, len, v, ok, U32.is_zero(v))
 
+def att.ray?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32) ->
+  Array<U32> & Bool:
+  att.ray.c(t, d, w1, w2, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
+def att.seq.r?(+sq: U32, +by: U32, +k: U32, r: Array<U32> & Bool) -> Array<U32> & Bool:
+  match r:
+    case (m, True{}):
+      (m, True{})
+    case (m, False{}):
+      att.seq(m, sq, by, U32.add(k, 1), U32.is_lt(U32.add(k, 1), 26))
+
 def att.seq?(m: Array<U32>, +sq: U32, +by: U32, +k: U32, go: Bool) -> Array<U32> & Bool:
   match go:
     case False{}:
@@ -39,13 +46,6 @@ def att.seq?(m: Array<U32>, +sq: U32, +by: U32, +k: U32, go: Bool) -> Array<U32>
       +d = B.neg_if(B.att.off(kn), by)
       att.seq.r(sq, by, k, att.ray(m, U32.add(sq, d), d, C.pc.make(by, B.att.w1(kn)),
         C.pc.make(by, B.att.w2(kn)), B.att.len(kn)))
-
-def att.seq.r?(+sq: U32, +by: U32, +k: U32, r: Array<U32> & Bool) -> Array<U32> & Bool:
-  match r:
-    case (m, True{}):
-      (m, True{})
-    case (m, False{}):
-      att.seq(m, sq, by, U32.add(k, 1), U32.is_lt(U32.add(k, 1), 26))
 
 # is square sq attacked by colour `by`?
 def attacked(m: Array<U32>, +sq: U32, +by: U32) -> Array<U32> & Bool:
@@ -61,11 +61,6 @@ def in_check(m: Array<U32>, +p: B.Pos) -> Array<U32> & Bool:
 def left_in_check(m: Array<U32>, +np: B.Pos) -> Array<U32> & Bool:
   +side = B.P.side(np)
   attacked(m, B.P.king(np, C.opp(side)), side)
-
-def gen.walk.e?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
-                r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +n) = r
-  gen.walk(m, us, base, qs, from, U32.add(t, d), d, U32.sub(len, 1), n)
 
 # walking from `from` along d, now at t with `len` steps left
 def gen.walk.d?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
@@ -88,6 +83,16 @@ def gen.walk?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32
               +d: U32, +len: U32, +n: U32) -> Array<U32> & U32:
   gen.walk.c(us, base, qs, from, t, d, len, n, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
 
+def gen.walk.e?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
+                r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +n) = r
+  gen.walk(m, us, base, qs, from, U32.add(t, d), d, U32.sub(len, 1), n)
+
+def gen.dirs.k?(+us: U32, +base: U32, +qs: U32, +from: U32, +di: U32, +de: U32, +len: U32,
+                r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +n) = r
+  gen.dirs(m, us, base, qs, from, n, U32.add(di, 1), de, len, U32.is_lt(U32.add(di, 1), de))
+
 # directions di..de-1 from square `from`, up to len steps each
 def gen.dirs?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +n: U32, +di: U32,
               +de: U32, +len: U32, go: Bool) -> Array<U32> & U32:
@@ -98,11 +103,6 @@ def gen.dirs?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +n: U32
       +d = B.dir(U32.to_nat(di))
       gen.dirs.k(us, base, qs, from, di, de, len,
         gen.walk(m, us, base, qs, from, U32.add(from, d), d, len, n))
-
-def gen.dirs.k?(+us: U32, +base: U32, +qs: U32, +from: U32, +di: U32, +de: U32, +len: U32,
-                r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +n) = r
-  gen.dirs(m, us, base, qs, from, n, U32.add(di, 1), de, len, U32.is_lt(U32.add(di, 1), de))
 
 def gen.type?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
               t: Nat) -> Array<U32> & U32:
@@ -130,14 +130,6 @@ def gen.piece?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32
     case True{}:
       gen.type(m, us, ep, base, qs, sq, n, U32.to_nat(C.pc.type(v)))
 
-def gen.sq?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
-            go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, n)
-    case True{}:
-      gen.pc(us, ep, base, qs, sq, n, m[sq])
-
 def gen.next?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, r: Array<U32> & U32) ->
   Array<U32> & U32:
   (m, +n) = r
@@ -150,6 +142,14 @@ def gen.pc?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
   +nx = U32.add(s1, U32.and(s1, 8))
   gen.next(us, ep, base, qs, nx, gen.piece(m, us, ep, base, qs, sq, n, v,
     U32.is_ne(v, 0) && U32.is_eq(C.pc.color(v), us)))
+
+def gen.sq?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
+            go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, n)
+    case True{}:
+      gen.pc(us, ep, base, qs, sq, n, m[sq])
 
 # still ok and square sq not attacked by `by`?
 def chk.safe(+sq: U32, +by: U32, r: Array<U32> & Bool) -> Array<U32> & Bool:
@@ -187,11 +187,6 @@ def gen.fin(+us: U32, +rights: U32, +base: U32, full: Bool, r: Array<U32> & U32)
     case False{}:
       r
 
-def gen.bits.p?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +sq: U32, +n: U32,
-                r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  gen.bits.n(us, ep, base, qs, lo, hi, gen.type(m, us, ep, base, qs, sq, n, U32.to_nat(C.pc.type(v))))
-
 def gen.bits.a?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +n: U32,
                 nzlo: Bool, nzhi: Bool) -> Array<U32> & U32:
   match nzlo nzhi:
@@ -214,6 +209,11 @@ def gen.bits.n?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, r:
   (m, +n) = r
   gen.bits(m, us, ep, base, qs, lo, hi, n)
 
+def gen.bits.p?(+us: U32, +ep: U32, +base: U32, +qs: U32, +lo: U32, +hi: U32, +sq: U32, +n: U32,
+                r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  gen.bits.n(us, ep, base, qs, lo, hi, gen.type(m, us, ep, base, qs, sq, n, U32.to_nat(C.pc.type(v))))
+
 # all pseudo-legal moves (qs = 0) or captures and queen promotions (qs = 1)
 def gen(m: Array<U32>, +p: B.Pos, +base: U32, +qs: U32) -> Array<U32> & U32:
   +us = B.P.side(p)
@@ -228,6 +228,15 @@ def fen.clear?(m: Array<U32>, +i: U32, go: Bool) -> Array<U32>:
       m[i] <- 0
       fen.clear(m, U32.add(i, 1), U32.is_lt(U32.add(i, 1), 128))
 
+def fen.place?(m: Array<U32>, s: String, +f: U32, +r: U32) -> Array<U32>:
+  match s:
+    case SNil{}:
+      m
+    case SCon{c, rest}:
+      +code = Char.to_u32(c)
+      fen.place.d(m, rest, f, r, code, B.fen.piece(U32.to_nat(code)), U32.is_eq(code, 47),
+        U32.is_ge(code, 49) && U32.is_le(code, 56))
+
 def fen.place.d?(m: Array<U32>, rest: String, +f: U32, +r: U32, +code: U32, +pc: U32,
                  slash: Bool, digit: Bool) -> Array<U32>:
   match slash digit:
@@ -240,27 +249,18 @@ def fen.place.d?(m: Array<U32>, rest: String, +f: U32, +r: U32, +code: U32, +pc:
       m[C.sel(ok, C.sq.make(f, r), 15)] <- C.sel(ok, pc, 0)
       fen.place(m, rest, U32.add(f, B.b2n(ok)), r)
 
-def fen.place?(m: Array<U32>, s: String, +f: U32, +r: U32) -> Array<U32>:
-  match s:
-    case SNil{}:
-      m
-    case SCon{c, rest}:
-      +code = Char.to_u32(c)
-      fen.place.d(m, rest, f, r, code, B.fen.piece(U32.to_nat(code)), U32.is_eq(code, 47),
-        U32.is_ge(code, 49) && U32.is_le(code, 56))
-
-def scan.k?(+sq: U32, s: B.Scan, r: Array<U32> & U32) -> Array<U32> & B.Scan:
-  (m, +v) = r
-  +s1 = U32.add(sq, 1)
-  +nx = U32.add(s1, U32.and(s1, 8))
-  scan(m, nx, B.scan.add(s, v, sq), U32.is_lt(nx, 128))
-
 def scan?(m: Array<U32>, +sq: U32, s: B.Scan, go: Bool) -> Array<U32> & B.Scan:
   match go:
     case False{}:
       (m, s)
     case True{}:
       scan.k(sq, s, m[sq])
+
+def scan.k?(+sq: U32, s: B.Scan, r: Array<U32> & U32) -> Array<U32> & B.Scan:
+  (m, +v) = r
+  +s1 = U32.add(sq, 1)
+  +nx = U32.add(s1, U32.and(s1, 8))
+  scan(m, nx, B.scan.add(s, v, sq), U32.is_lt(nx, 128))
 
 # set up the board from a FEN string; answers the state. Missing trailing
 # fields default to "w - - 0 1".
@@ -279,9 +279,6 @@ def fen.parse(m: Array<U32>, s: String) -> Array<U32> & B.Pos:
            (U32.and(C.z.side.hi(), C.bmask(U32.is_eq(side, 1))) .^. C.z.castle.hi(castle) .^. C.z.ep.hi(ep) : U32),
            0, 0, 0} : B.Acc}
   B.fen.pos(side, castle, ep, half, scan(m, 0, B.Scan{a0, C.NO_SQ(), C.NO_SQ(), B.Occ{0, 0, 0, 0, 0, 0, 0, 0, 0}}, True{}))
-
-def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
-  fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))
 
 def fen.row.v?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, +v: U32, empty: Bool) ->
   Array<U32> & String:
@@ -305,6 +302,9 @@ def fen.rows.go?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, inrow: B
     case False{} False{}:
       fen.rows(m, 0, U32.sub(r, 1), 0, acc ++ B.fen.gap(e) ++ "/")
 
+def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
+  fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))
+
 # the FEN of the current position (ep square shown whenever set)
 def fen.out(m: Array<U32>, +p: B.Pos) -> Array<U32> & String:
   B.fen.out.b(p, fen.rows(m, 0, 7, 0, ""))
@@ -315,12 +315,6 @@ def legal.a(+mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & Bool:
 
 def is_legal(m: Array<U32>, +p: B.Pos, +mv: U32) -> Array<U32> & Bool:
   legal.a(mv, B.make(m, p, mv))
-
-# find the legal move whose UCI key is k among the n moves at base; 0 if none
-def find.v?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +mv) = r
-  find.w(p, k, base, i, n, mv, U32.is_eq(B.mv.ukey(mv), k), m)
 
 def find.go.b?(m: Array<U32>, +p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, go: Bool) ->
   Array<U32> & U32:
@@ -349,6 +343,12 @@ def find.w?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, +mv: U32, hit: Boo
     case False{}:
       find.go(m, p, k, base, U32.add(i, 1), n)
 
+# find the legal move whose UCI key is k among the n moves at base; 0 if none
+def find.v?(+p: B.Pos, +k: U32, +base: U32, +i: U32, +n: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +mv) = r
+  find.w(p, k, base, i, n, mv, U32.is_eq(B.mv.ukey(mv), k), m)
+
 def find.gen(+p: B.Pos, +k: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
   find.go(m, p, k, base, 0, n)
@@ -359,21 +359,16 @@ def find_move(m: Array<U32>, +p: B.Pos, s: String, +ply: U32) -> Array<U32> & U3
   +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
   find.gen(p, B.uci.key(s), base, gen(m, p, base, 0))
 
-def perft.chk?(+p: B.Pos, +depth: U32, +ply: U32, r: Array<U32> & Bool) -> Array<U32> & U32:
-  (m, +chk) = r
-  +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
-  perft.gen(p, depth, ply, base, chk, gen(m, p, base, 0))
-
-# number of leaf nodes of the legal move tree of the given depth (>= 1)
-def perft?(m: Array<U32>, +p: B.Pos, +depth: U32, +ply: U32) -> Array<U32> & U32:
-  perft.chk(p, depth, ply, in_check(m, p))
-
 # Perft
 # -----
 
 def perft.next?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, +i: U32, +n: U32, +acc: U32,
                 m: Array<U32>) -> Array<U32> & U32:
   perft.loop(m, p, depth, ply, base, chk, U32.add(i, 1), n, acc, U32.is_lt(U32.add(i, 1), n))
+
+# number of leaf nodes of the legal move tree of the given depth (>= 1)
+def perft?(m: Array<U32>, +p: B.Pos, +depth: U32, +ply: U32) -> Array<U32> & U32:
+  perft.chk(p, depth, ply, in_check(m, p))
 
 def perft.add?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, +i: U32, +n: U32, +acc: U32,
                +mv: U32, +np: B.Pos, r: Array<U32> & U32) -> Array<U32> & U32:
@@ -469,13 +464,10 @@ def perft.gen?(+p: B.Pos, +depth: U32, +ply: U32, +base: U32, +chk: Bool, r: Arr
   (m, +n) = r
   perft.loop(m, p, depth, ply, base, chk, 0, n, 0, U32.is_lt(0, n))
 
-def divide.loop.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String,
-                   +tot: U32, go: Bool) -> Array<U32> & String:
-  match go:
-    case False{}:
-      (m, acc ++ "total: " ++ U32.show(tot))
-    case True{}:
-      divide.mv(p, depth, base, i, n, acc, tot, m[U32.add(base, i)])
+def perft.chk?(+p: B.Pos, +depth: U32, +ply: U32, r: Array<U32> & Bool) -> Array<U32> & U32:
+  (m, +chk) = r
+  +base = U32.add(B.MOVES(), U32.shln(ply, 8n))
+  perft.gen(p, depth, ply, base, chk, gen(m, p, base, 0))
 
 def divide.loop?(m: Array<U32>, +p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String,
                  +tot: U32) -> Array<U32> & String:
@@ -505,6 +497,14 @@ def divide.mv?(+p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String
                r: Array<U32> & U32) -> Array<U32> & String:
   (m, +mv) = r
   divide.made(p, depth, base, i, n, acc, tot, mv, B.make(m, p, mv))
+
+def divide.loop.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String,
+                   +tot: U32, go: Bool) -> Array<U32> & String:
+  match go:
+    case False{}:
+      (m, acc ++ "total: " ++ U32.show(tot))
+    case True{}:
+      divide.mv(p, depth, base, i, n, acc, tot, m[U32.add(base, i)])
 
 def divide.gen?(+p: B.Pos, +depth: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +n) = r
@@ -590,12 +590,6 @@ def see.val(t: Nat) -> U32:
     case _:
       0
 
-# the first piece within len steps along d from s (exclusive), packed
-# piece | sq << 8; 0 when none
-def firstn?(m: Array<U32>, +s: U32, +d: U32, +len: U32) -> Array<U32> & U32:
-  +t = U32.add(s, d)
-  firstn.c(t, d, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
-
 def firstn.d?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +v: U32, ok: Bool, empty: Bool) -> Array<U32> & U32:
   match ok empty:
     case False{} _:
@@ -609,14 +603,25 @@ def firstn.c?(+t: U32, +d: U32, +len: U32, ok: Bool, r: Array<U32> & U32) -> Arr
   (m, +v) = r
   firstn.d(m, t, d, len, v, ok, U32.is_zero(v))
 
-def lva.k?(m: Array<U32>, +to: U32, +by: U32, +k: U32, +best: U32, +bestv: U32) -> Array<U32> & U32:
-  lva.go(m, to, by, k, best, bestv, U32.is_lt(k, 26) && U32.is_gt(bestv, 100))
+# the first piece within len steps along d from s (exclusive), packed
+# piece | sq << 8; 0 when none
+def firstn?(m: Array<U32>, +s: U32, +d: U32, +len: U32) -> Array<U32> & U32:
+  +t = U32.add(s, d)
+  firstn.c(t, d, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
+# probe j visits attack-table entry lva.ord(j): pawns, knights, sliders,
+# then the king; it stops once no remaining probe can find a cheaper piece
+def lva.ord(+j: U32) -> U32:
+  C.sel(U32.is_lt(j, 10), j, C.sel(U32.is_lt(j, 18), U32.add(j, 8), U32.sub(j, 8)))
+
+def lva.min(+j: U32) -> U32:
+  C.sel(U32.is_lt(j, 2), 100, C.sel(U32.is_lt(j, 10), 320, C.sel(U32.is_lt(j, 18), 330, 20000)))
 
 def lva.p?(+to: U32, +by: U32, +k: U32, +best: U32, +bestv: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +f) = r
   +p = U32.and(f, 255)
   +t = C.pc.type(p)
-  +kn = U32.to_nat(k)
+  +kn = U32.to_nat(lva.ord(k))
   +ok = U32.is_ne(p, 0) && U32.is_eq(C.pc.color(p), by) &&
     (U32.is_eq(t, B.att.w1(kn)) || U32.is_eq(t, B.att.w2(kn)))
   +v = see.val(U32.to_nat(t))
@@ -628,17 +633,17 @@ def lva.go?(m: Array<U32>, +to: U32, +by: U32, +k: U32, +best: U32, +bestv: U32,
     case False{}:
       (m, best)
     case True{}:
-      +kn = U32.to_nat(k)
+      +kn = U32.to_nat(lva.ord(k))
       +d = B.neg_if(B.att.off(kn), by)
       lva.p(to, by, k, best, bestv, firstn(m, to, d, B.att.len(kn)))
+
+def lva.k?(m: Array<U32>, +to: U32, +by: U32, +k: U32, +best: U32, +bestv: U32) -> Array<U32> & U32:
+  lva.go(m, to, by, k, best, bestv, U32.is_lt(k, 26) && U32.is_gt(bestv, lva.min(k)))
 
 # the least valuable piece of colour `by` attacking square `to` (packed
 # piece | sq << 8), 0 when none
 def lva(m: Array<U32>, +to: U32, +by: U32) -> Array<U32> & U32:
   lva.k(m, to, by, 0, 0, 100000)
-
-def see.restore?(m: Array<U32>, +i: U32, +sp: U32) -> Array<U32>:
-  see.restore.go(m, i, sp, U32.is_lt(i, sp))
 
 def see.restore.b?(+i: U32, +sp: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +f) = r
@@ -652,16 +657,12 @@ def see.restore.go?(m: Array<U32>, +i: U32, +sp: U32, go: Bool) -> Array<U32>:
     case True{}:
       see.restore.b(i, sp, m[U32.add(SEEST(), i)])
 
+def see.restore?(m: Array<U32>, +i: U32, +sp: U32) -> Array<U32>:
+  see.restore.go(m, i, sp, U32.is_lt(i, sp))
+
 def see.back.fin?(+sp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +g0) = r
   (see.restore(m, 0, sp), g0)
-
-def see.back.go?(m: Array<U32>, +d: U32, +sp: U32, go: Bool) -> Array<U32> & U32:
-  match go:
-    case True{}:
-      see.back.b(d, sp, m[U32.add(SEEG(), U32.sub(d, 2))])
-    case False{}:
-      see.back.fin(sp, m[SEEG()])
 
 # fold the gain list back (gain[d-1] = -max(-gain[d-1], gain[d])), restore
 def see.back?(m: Array<U32>, +d: U32, +sp: U32) -> Array<U32> & U32:
@@ -676,9 +677,12 @@ def see.back.b?(+d: U32, +sp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +ga) = r
   see.back.c(d, sp, ga, m[U32.add(SEEG(), U32.sub(d, 1))])
 
-def see.l2?(+to: U32, +stm: U32, +d: U32, +cur: U32, +sp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +f) = r
-  see.l2.b(m, to, stm, d, cur, sp, f, U32.is_zero(f) || U32.is_ge(d, 30))
+def see.back.go?(m: Array<U32>, +d: U32, +sp: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case True{}:
+      see.back.b(d, sp, m[U32.add(SEEG(), U32.sub(d, 2))])
+    case False{}:
+      see.back.fin(sp, m[SEEG()])
 
 def see.loop?(m: Array<U32>, +to: U32, +stm: U32, +d: U32, +cur: U32, +sp: U32) -> Array<U32> & U32:
   see.l2(to, stm, d, cur, sp, lva(m, to, stm))
@@ -697,6 +701,10 @@ def see.l2.b?(m: Array<U32>, +to: U32, +stm: U32, +d: U32, +cur: U32, +sp: U32, 
       see.back(m, d, sp)
     case False{}:
       see.l3(to, stm, d, cur, sp, f, m[U32.add(SEEG(), U32.sub(d, 1))])
+
+def see.l2?(+to: U32, +stm: U32, +d: U32, +cur: U32, +sp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +f) = r
+  see.l2.b(m, to, stm, d, cur, sp, f, U32.is_zero(f) || U32.is_ge(d, 30))
 
 # when the capturer is worth no more than the victim the exchange cannot
 # lose material: answer the victim's value without playing it out
