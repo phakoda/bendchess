@@ -463,7 +463,7 @@ def it.re2?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +np
 
 def iter.fin?(+n: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +s) = r
-  (sort(m, 1, n), s)
+  eff.a(s, eff.sum(sort(m, 1, n), 0, n, 0))
 
 def iter.c?(+p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, +exact: Bool, +n: U32,
             +best: U32, r: Array<U32> & U32) -> Array<U32> & U32:
@@ -490,3 +490,30 @@ def iter.x?(m: Array<U32>, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Op
 def iter?(m: Array<U32>, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool) ->
   Array<U32> & U32:
   iter.x(m, p, d, alpha, beta, o, chk, False{})
+
+# share (percent) of the last iteration's root nodes spent on the best move
+def EFFORT() -> U32:
+  U32.add(B.SC(), 52)
+
+def eff.sum?(m: Array<U32>, +i: U32, +n: U32, +acc: U32) -> Array<U32> & U32:
+  eff.sum.go(m, i, n, acc, U32.is_lt(i, n))
+
+def eff.sum.k?(+i: U32, +n: U32, +acc: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  eff.sum(m, U32.add(i, 1), n, U32.add(acc, U32.shrn(v, 4n)))
+
+def eff.sum.go?(m: Array<U32>, +i: U32, +n: U32, +acc: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, acc)
+    case True{}:
+      eff.sum.k(i, n, acc, m[rslot(i, 2)])
+
+def eff.b?(+s: U32, +tot: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +bn) = r
+  m[EFFORT()] <- U32.min(U32.div(U32.mul(U32.min(U32.shrn(bn, 4n), 40000000), 100), U32.max(tot, 1)), 100)
+  (m, s)
+
+def eff.a?(+s: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +tot) = r
+  eff.b(s, tot, m[rslot(0, 2)])
