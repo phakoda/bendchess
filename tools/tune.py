@@ -66,18 +66,37 @@ def loss(w, base, x, t):
     return float(np.mean((sig(base + x @ w) - t) ** 2))
 
 
-def fit_eval(base, x, t, w0, epochs=3000, lr=2.0, l2=1e-7):
+def fit_eval(base, x, t, w0, lam=0.0, iters=30):
+    """Gauss-Newton on the squared win-probability error with a ridge
+    penalty lam * |w - w0|^2 (shrinkage toward the hand weights)."""
     w = w0.copy()
-    m = np.zeros_like(w)
-    v = np.zeros_like(w)
     k = math.log(10) / 400.0
-    for i in range(1, epochs + 1):
+    n = len(t)
+    obj = lambda v: loss(v, base, x, t) + lam * float(np.sum((v - w0) ** 2)) / 1e6
+    best = (obj(w), w.copy())
+    for _ in range(iters):
         p = sig(base + x @ w)
-        g = (2 * (p - t) * p * (1 - p) * k) @ x / len(t) + l2 * w
-        m = 0.9 * m + 0.1 * g
-        v = 0.999 * v + 0.001 * g * g
-        w -= lr * (m / (1 - 0.9 ** i)) / (np.sqrt(v / (1 - 0.999 ** i)) + 1e-12)
-    return w
+        jac = (p * (1 - p) * k)[:, None] * x
+        g = jac.T @ (p - t) / n + lam * (w - w0) / 1e6
+        h = jac.T @ jac / n + (lam / 1e6 + 1e-12) * np.eye(len(w))
+        w = w - np.linalg.solve(h, g)
+        cur = obj(w)
+        if cur < best[0]:
+            best = (cur, w.copy())
+    return best[1]
+
+
+def choose_lam(rows, nfeat, w0, lam_target):
+    """pick the ridge strength by game-grouped validation inside training"""
+    a, b = split(rows, 0.75, seed=11)
+    ba, xa = eval_design(a, nfeat)
+    bb, xb = eval_design(b, nfeat)
+    ta, tb = eval_target(a, lam_target), eval_target(b, lam_target)
+    scores = []
+    for lam in (0.0, 1.0, 3.0, 10.0, 30.0, 100.0, 300.0, 1000.0):
+        w = fit_eval(ba, xa, ta, w0, lam)
+        scores.append((loss(w, bb, xb, tb), lam))
+    return min(scores)[1], scores
 
 
 def linfit(x, y):
@@ -130,8 +149,12 @@ def main():
     zero = np.zeros_like(w0)
     l_pesto = loss(zero, bte, xte, tte)
     l_hand = loss(w0, bte, xte, tte)
-    w = fit_eval(btr, xtr, ttr, w0)
+    lam, grid = choose_lam(tr, nfeat, w0, args.lam)
+    print("[eval] ridge strength by validation:", ", ".join(f"{l:g}:{v:.5f}" for v, l in grid), "-> chose", lam)
+    w = fit_eval(btr, xtr, ttr, w0, lam)
     l_fit_tr, l_fit_te = loss(w, btr, xtr, ttr), loss(w, bte, xte, tte)
+    l_hand_tr = loss(w0, btr, xtr, ttr)
+    print(f"[eval] train MSE hand weights {l_hand_tr:.5f}")
     print(f"[eval] test MSE (win-prob space): PeSTO only {l_pesto:.5f} | hand weights {l_hand:.5f} | "
           f"fitted {l_fit_te:.5f} (train {l_fit_tr:.5f})")
     fitted = [[feats[i][0], round(float(w[i])), round(float(w[nfeat + i]))] for i in range(nfeat)]

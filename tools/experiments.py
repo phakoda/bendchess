@@ -30,6 +30,7 @@ EXPERIMENTS = {
     "cas2_nodes": ("bend:Complexity=2,NodesTime=%d" % NT, "bend:Complexity=1,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas3_nodes": ("bend:Complexity=3,NodesTime=%d" % NT, "bend:Complexity=2,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas2_vs0_nodes": ("bend:Complexity=2,NodesTime=%d" % NT, "bend:Complexity=0,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
+    "cas3_vs0_nodes": ("bend:Complexity=3,NodesTime=%d" % NT, "bend:Complexity=0,NodesTime=%d" % NT, ["--tc", NODE_TC, "--nodeclock", str(NT)]),
     "cas1_wall": ("bend:Complexity=1", "bend:Complexity=0", ["--tc", WALL_TC]),
     "cas2_wall": ("bend:Complexity=2", "bend:Complexity=0", ["--tc", WALL_TC]),
     # ablations (fixed nodes per move): speculative pruning components

@@ -753,15 +753,19 @@ def an.est.c(+cd: U32, +nk: U32, +n1: U32, +n2: U32, +plies: U32, +mat: U32, r: 
   +u2 = (drift + 0.1 : F32)
   +u10 = (drift * U32.to_f32(S.sub0(10, cd)) / 2.0 + 0.2 : F32)
   +lbar = (((la + lb) / 2.0 + 1.0) / 2.0 : F32)
-  +rem = U32.add(25, U32.div(U32.mul(mat, 3), 4))
+  # remaining plies: linear model fitted by tools/tune.py on self-play
+  # data (63.5 + 32.8 * phase/24 - 0.224 * ply; test MAE ~33 plies)
+  +rem = U32.max(S.sub0(U32.add(63, U32.div(U32.mul(33, mat), 24)), U32.div(U32.mul(22, plies), 100)), 8)
   +lc = (U32.to_f32(rem) * lbar : F32)
-  +lclo = (U32.to_f32(U32.div(rem, 2)) * lbar : F32)
-  +lchi = (U32.to_f32(U32.mul(rem, 2)) * lbar : F32)
+  +remlo = U32.max(S.sub0(rem, 33), 4)
+  +remhi = U32.add(rem, 33)
+  +lclo = (U32.to_f32(remlo) * lbar : F32)
+  +lchi = (U32.to_f32(remhi) * lbar : F32)
   (m, A.say("  A estimate (branching extrapolated from exact d" ++ U32.show(S.sub0(cd, 1)) ++ "-" ++ U32.show(cd) ++
     "): log10 perft(" ++ U32.show(d2) ++ ") ~ " ++ A.f1(e2) ++ " +/- " ++ A.f1(u2) ++ ", log10 perft(10) ~ " ++
     A.f1(e10) ++ " +/- " ++ A.f1(u10)) ++
     A.say("  C heuristic (NOT a count): expected remaining plies ~" ++ U32.show(rem) ++ " (" ++
-    U32.show(U32.div(rem, 2)) ++ "-" ++ U32.show(U32.mul(rem, 2)) ++ "), mean log10 branching ~" ++ A.f1(lbar) ++
+    U32.show(remlo) ++ "-" ++ U32.show(remhi) ++ ", fitted model), mean log10 branching ~" ++ A.f1(lbar) ++
     " => log10 complete-game continuations ~" ++ A.f1(lc) ++ " (" ++ A.f1(lclo) ++ "-" ++ A.f1(lchi) ++ ")"))
 
 def an.est.b(+cd: U32, +nk: U32, +n1: U32, +plies: U32, +mat: U32, r: Array<U32> & U32) -> Array<U32> & String:
@@ -834,7 +838,7 @@ def an.cx.out.b?(+p: B.Pos, +o: S.Opt, +depth: U32, +cd: U32, +chk: Bool, lines:
 def an.cx.out?(+p: B.Pos, +o: S.Opt, +depth: U32, +cd: U32, +chk: Bool, +plies: U32, +mat0: U32,
                r: Array<U32> & String) -> IO(Array<U32>):
   (m, lines) = r
-  an.cx.out.b(p, o, depth, cd, chk, lines, an.est(m, cd, plies, U32.div(U32.mul(B.P.ph(p), 78), 24)))
+  an.cx.out.b(p, o, depth, cd, chk, lines, an.est(m, cd, plies, U32.min(B.P.ph(p), 24)))
 
 # the report
 def an.r7?(+p: B.Pos, +o: S.Opt, +depth: U32, +cd: U32, fen: String, +chk: Bool, wmat: String, bmat: String,
