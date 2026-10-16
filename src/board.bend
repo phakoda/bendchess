@@ -1035,3 +1035,85 @@ def pawnkey.o(o: Occ) -> U32:
 
 def pawnkey(+p: Pos) -> U32:
   pawnkey.o(P.occ(p))
+
+# Rays on the occupancy bitboards
+# -------------------------------
+# For direction i of dir() (0..7) and square64 sq: the first occupied
+# square along the ray (64 when none), from the ray tables and the lowest
+# (increasing directions 16, 1, 17, 15) or highest set bit.
+
+def msb32(+x0: U32) -> U32:
+  +x1 = U32.or(x0, U32.shrn(x0, 1n))
+  +x2 = U32.or(x1, U32.shrn(x1, 2n))
+  +x3 = U32.or(x2, U32.shrn(x2, 4n))
+  +x4 = U32.or(x3, U32.shrn(x3, 8n))
+  U32.sub(popcnt(U32.or(x4, U32.shrn(x4, 16n))), 1)
+
+def ray.up(+i: U32) -> Bool:
+  U32.is_eq(i, 0) || U32.is_eq(i, 2) || U32.is_eq(i, 4) || U32.is_eq(i, 5)
+
+def ray.lo(+i: U32, +sq: U32) -> U32:
+  T.ray_lo(U32.to_nat(U32.add(U32.shln(i, 6n), sq)))
+
+def ray.hi(+i: U32, +sq: U32) -> U32:
+  T.ray_hi(U32.to_nat(U32.add(U32.shln(i, 6n), sq)))
+
+def blocker(+i: U32, +sq: U32, +ol: U32, +oh: U32) -> U32:
+  +bl = U32.and(ray.lo(i, sq), ol)
+  +bh = U32.and(ray.hi(i, sq), oh)
+  +up = C.sel(U32.is_ne(bl, 0), ctz(bl), U32.add(32, ctz(bh)))
+  +dn = C.sel(U32.is_ne(bh, 0), U32.add(32, msb32(bh)), msb32(bl))
+  C.sel(U32.is_zero(U32.or(bl, bh)), 64, C.sel(ray.up(i), up, dn))
+
+# the squares a slider on sq attacks along direction i (lo / hi half)
+def ray.att.lo(+i: U32, +sq: U32, +ol: U32, +oh: U32) -> U32:
+  +b = blocker(i, sq, ol, oh)
+  C.sel(U32.is_eq(b, 64), ray.lo(i, sq), U32.and(ray.lo(i, sq), U32.not(ray.lo(i, U32.and(b, 63)))))
+
+def ray.att.hi(+i: U32, +sq: U32, +ol: U32, +oh: U32) -> U32:
+  +b = blocker(i, sq, ol, oh)
+  C.sel(U32.is_eq(b, 64), ray.hi(i, sq), U32.and(ray.hi(i, sq), U32.not(ray.hi(i, U32.and(b, 63)))))
+
+# is 0x88 square s set in the occupancy (lo, hi)
+def occ.has(+ol: U32, +oh: U32, +s: U32) -> Bool:
+  +i = C.sq.to64(s)
+  U32.is_ne(U32.and(C.sel(U32.is_lt(i, 32), ol, oh), U32.shln(1, U32.to_nat(U32.and(i, 31)))), 0)
+
+def occ.clr.lo(+ol: U32, +s: U32) -> U32:
+  +i = C.sq.to64(s)
+  C.sel(U32.is_lt(i, 32), U32.and(ol, U32.not(U32.shln(1, U32.to_nat(U32.and(i, 31))))), ol)
+
+def occ.clr.hi(+oh: U32, +s: U32) -> U32:
+  +i = C.sq.to64(s)
+  C.sel(U32.is_ge(i, 32), U32.and(oh, U32.not(U32.shln(1, U32.to_nat(U32.and(i, 31))))), oh)
+
+def occ.all.lo(o: Occ) -> U32:
+  match o:
+    case Occ{w0, _, b0, _, _, _, _, _, _}:
+      U32.or(w0, b0)
+
+def occ.all.hi(o: Occ) -> U32:
+  match o:
+    case Occ{_, w1, _, b1, _, _, _, _, _}:
+      U32.or(w1, b1)
+
+# colour-c pieces / pawns in the occupancy record (lo, hi halves)
+def occ.col.lo(o: Occ, +c: U32) -> U32:
+  match o:
+    case Occ{w0, _, b0, _, _, _, _, _, _}:
+      C.sel(U32.is_zero(c), w0, b0)
+
+def occ.col.hi(o: Occ, +c: U32) -> U32:
+  match o:
+    case Occ{_, w1, _, b1, _, _, _, _, _}:
+      C.sel(U32.is_zero(c), w1, b1)
+
+def occ.pawn.lo(o: Occ, +c: U32) -> U32:
+  match o:
+    case Occ{_, _, _, _, wp0, _, bp0, _, _}:
+      C.sel(U32.is_zero(c), wp0, bp0)
+
+def occ.pawn.hi(o: Occ, +c: U32) -> U32:
+  match o:
+    case Occ{_, _, _, _, _, wp1, _, bp1, _}:
+      C.sel(U32.is_zero(c), wp1, bp1)

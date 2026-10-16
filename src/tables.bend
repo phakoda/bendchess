@@ -5617,3 +5617,2327 @@ def katt_hi(n: Nat) -> U32:
     case _:
       0
 
+def ray_lo(n: Nat) -> U32:
+  match n:
+    case 0n:
+      16843008
+    case 1n:
+      33686016
+    case 2n:
+      67372032
+    case 3n:
+      134744064
+    case 4n:
+      269488128
+    case 5n:
+      538976256
+    case 6n:
+      1077952512
+    case 7n:
+      2155905024
+    case 8n:
+      16842752
+    case 9n:
+      33685504
+    case 10n:
+      67371008
+    case 11n:
+      134742016
+    case 12n:
+      269484032
+    case 13n:
+      538968064
+    case 14n:
+      1077936128
+    case 15n:
+      2155872256
+    case 16n:
+      16777216
+    case 17n:
+      33554432
+    case 18n:
+      67108864
+    case 19n:
+      134217728
+    case 20n:
+      268435456
+    case 21n:
+      536870912
+    case 22n:
+      1073741824
+    case 23n:
+      2147483648
+    case 24n:
+      0
+    case 25n:
+      0
+    case 26n:
+      0
+    case 27n:
+      0
+    case 28n:
+      0
+    case 29n:
+      0
+    case 30n:
+      0
+    case 31n:
+      0
+    case 32n:
+      0
+    case 33n:
+      0
+    case 34n:
+      0
+    case 35n:
+      0
+    case 36n:
+      0
+    case 37n:
+      0
+    case 38n:
+      0
+    case 39n:
+      0
+    case 40n:
+      0
+    case 41n:
+      0
+    case 42n:
+      0
+    case 43n:
+      0
+    case 44n:
+      0
+    case 45n:
+      0
+    case 46n:
+      0
+    case 47n:
+      0
+    case 48n:
+      0
+    case 49n:
+      0
+    case 50n:
+      0
+    case 51n:
+      0
+    case 52n:
+      0
+    case 53n:
+      0
+    case 54n:
+      0
+    case 55n:
+      0
+    case 56n:
+      0
+    case 57n:
+      0
+    case 58n:
+      0
+    case 59n:
+      0
+    case 60n:
+      0
+    case 61n:
+      0
+    case 62n:
+      0
+    case 63n:
+      0
+    case 64n:
+      0
+    case 65n:
+      0
+    case 66n:
+      0
+    case 67n:
+      0
+    case 68n:
+      0
+    case 69n:
+      0
+    case 70n:
+      0
+    case 71n:
+      0
+    case 72n:
+      1
+    case 73n:
+      2
+    case 74n:
+      4
+    case 75n:
+      8
+    case 76n:
+      16
+    case 77n:
+      32
+    case 78n:
+      64
+    case 79n:
+      128
+    case 80n:
+      257
+    case 81n:
+      514
+    case 82n:
+      1028
+    case 83n:
+      2056
+    case 84n:
+      4112
+    case 85n:
+      8224
+    case 86n:
+      16448
+    case 87n:
+      32896
+    case 88n:
+      65793
+    case 89n:
+      131586
+    case 90n:
+      263172
+    case 91n:
+      526344
+    case 92n:
+      1052688
+    case 93n:
+      2105376
+    case 94n:
+      4210752
+    case 95n:
+      8421504
+    case 96n:
+      16843009
+    case 97n:
+      33686018
+    case 98n:
+      67372036
+    case 99n:
+      134744072
+    case 100n:
+      269488144
+    case 101n:
+      538976288
+    case 102n:
+      1077952576
+    case 103n:
+      2155905152
+    case 104n:
+      16843009
+    case 105n:
+      33686018
+    case 106n:
+      67372036
+    case 107n:
+      134744072
+    case 108n:
+      269488144
+    case 109n:
+      538976288
+    case 110n:
+      1077952576
+    case 111n:
+      2155905152
+    case 112n:
+      16843009
+    case 113n:
+      33686018
+    case 114n:
+      67372036
+    case 115n:
+      134744072
+    case 116n:
+      269488144
+    case 117n:
+      538976288
+    case 118n:
+      1077952576
+    case 119n:
+      2155905152
+    case 120n:
+      16843009
+    case 121n:
+      33686018
+    case 122n:
+      67372036
+    case 123n:
+      134744072
+    case 124n:
+      269488144
+    case 125n:
+      538976288
+    case 126n:
+      1077952576
+    case 127n:
+      2155905152
+    case 128n:
+      254
+    case 129n:
+      252
+    case 130n:
+      248
+    case 131n:
+      240
+    case 132n:
+      224
+    case 133n:
+      192
+    case 134n:
+      128
+    case 135n:
+      0
+    case 136n:
+      65024
+    case 137n:
+      64512
+    case 138n:
+      63488
+    case 139n:
+      61440
+    case 140n:
+      57344
+    case 141n:
+      49152
+    case 142n:
+      32768
+    case 143n:
+      0
+    case 144n:
+      16646144
+    case 145n:
+      16515072
+    case 146n:
+      16252928
+    case 147n:
+      15728640
+    case 148n:
+      14680064
+    case 149n:
+      12582912
+    case 150n:
+      8388608
+    case 151n:
+      0
+    case 152n:
+      4261412864
+    case 153n:
+      4227858432
+    case 154n:
+      4160749568
+    case 155n:
+      4026531840
+    case 156n:
+      3758096384
+    case 157n:
+      3221225472
+    case 158n:
+      2147483648
+    case 159n:
+      0
+    case 160n:
+      0
+    case 161n:
+      0
+    case 162n:
+      0
+    case 163n:
+      0
+    case 164n:
+      0
+    case 165n:
+      0
+    case 166n:
+      0
+    case 167n:
+      0
+    case 168n:
+      0
+    case 169n:
+      0
+    case 170n:
+      0
+    case 171n:
+      0
+    case 172n:
+      0
+    case 173n:
+      0
+    case 174n:
+      0
+    case 175n:
+      0
+    case 176n:
+      0
+    case 177n:
+      0
+    case 178n:
+      0
+    case 179n:
+      0
+    case 180n:
+      0
+    case 181n:
+      0
+    case 182n:
+      0
+    case 183n:
+      0
+    case 184n:
+      0
+    case 185n:
+      0
+    case 186n:
+      0
+    case 187n:
+      0
+    case 188n:
+      0
+    case 189n:
+      0
+    case 190n:
+      0
+    case 191n:
+      0
+    case 192n:
+      0
+    case 193n:
+      1
+    case 194n:
+      3
+    case 195n:
+      7
+    case 196n:
+      15
+    case 197n:
+      31
+    case 198n:
+      63
+    case 199n:
+      127
+    case 200n:
+      0
+    case 201n:
+      256
+    case 202n:
+      768
+    case 203n:
+      1792
+    case 204n:
+      3840
+    case 205n:
+      7936
+    case 206n:
+      16128
+    case 207n:
+      32512
+    case 208n:
+      0
+    case 209n:
+      65536
+    case 210n:
+      196608
+    case 211n:
+      458752
+    case 212n:
+      983040
+    case 213n:
+      2031616
+    case 214n:
+      4128768
+    case 215n:
+      8323072
+    case 216n:
+      0
+    case 217n:
+      16777216
+    case 218n:
+      50331648
+    case 219n:
+      117440512
+    case 220n:
+      251658240
+    case 221n:
+      520093696
+    case 222n:
+      1056964608
+    case 223n:
+      2130706432
+    case 224n:
+      0
+    case 225n:
+      0
+    case 226n:
+      0
+    case 227n:
+      0
+    case 228n:
+      0
+    case 229n:
+      0
+    case 230n:
+      0
+    case 231n:
+      0
+    case 232n:
+      0
+    case 233n:
+      0
+    case 234n:
+      0
+    case 235n:
+      0
+    case 236n:
+      0
+    case 237n:
+      0
+    case 238n:
+      0
+    case 239n:
+      0
+    case 240n:
+      0
+    case 241n:
+      0
+    case 242n:
+      0
+    case 243n:
+      0
+    case 244n:
+      0
+    case 245n:
+      0
+    case 246n:
+      0
+    case 247n:
+      0
+    case 248n:
+      0
+    case 249n:
+      0
+    case 250n:
+      0
+    case 251n:
+      0
+    case 252n:
+      0
+    case 253n:
+      0
+    case 254n:
+      0
+    case 255n:
+      0
+    case 256n:
+      134480384
+    case 257n:
+      268960768
+    case 258n:
+      537921536
+    case 259n:
+      1075843072
+    case 260n:
+      2151686144
+    case 261n:
+      8404992
+    case 262n:
+      32768
+    case 263n:
+      0
+    case 264n:
+      67239936
+    case 265n:
+      134479872
+    case 266n:
+      268959744
+    case 267n:
+      537919488
+    case 268n:
+      1075838976
+    case 269n:
+      2151677952
+    case 270n:
+      8388608
+    case 271n:
+      0
+    case 272n:
+      33554432
+    case 273n:
+      67108864
+    case 274n:
+      134217728
+    case 275n:
+      268435456
+    case 276n:
+      536870912
+    case 277n:
+      1073741824
+    case 278n:
+      2147483648
+    case 279n:
+      0
+    case 280n:
+      0
+    case 281n:
+      0
+    case 282n:
+      0
+    case 283n:
+      0
+    case 284n:
+      0
+    case 285n:
+      0
+    case 286n:
+      0
+    case 287n:
+      0
+    case 288n:
+      0
+    case 289n:
+      0
+    case 290n:
+      0
+    case 291n:
+      0
+    case 292n:
+      0
+    case 293n:
+      0
+    case 294n:
+      0
+    case 295n:
+      0
+    case 296n:
+      0
+    case 297n:
+      0
+    case 298n:
+      0
+    case 299n:
+      0
+    case 300n:
+      0
+    case 301n:
+      0
+    case 302n:
+      0
+    case 303n:
+      0
+    case 304n:
+      0
+    case 305n:
+      0
+    case 306n:
+      0
+    case 307n:
+      0
+    case 308n:
+      0
+    case 309n:
+      0
+    case 310n:
+      0
+    case 311n:
+      0
+    case 312n:
+      0
+    case 313n:
+      0
+    case 314n:
+      0
+    case 315n:
+      0
+    case 316n:
+      0
+    case 317n:
+      0
+    case 318n:
+      0
+    case 319n:
+      0
+    case 320n:
+      0
+    case 321n:
+      256
+    case 322n:
+      66048
+    case 323n:
+      16909312
+    case 324n:
+      33818624
+    case 325n:
+      67637248
+    case 326n:
+      135274496
+    case 327n:
+      270548992
+    case 328n:
+      0
+    case 329n:
+      65536
+    case 330n:
+      16908288
+    case 331n:
+      33816576
+    case 332n:
+      67633152
+    case 333n:
+      135266304
+    case 334n:
+      270532608
+    case 335n:
+      541065216
+    case 336n:
+      0
+    case 337n:
+      16777216
+    case 338n:
+      33554432
+    case 339n:
+      67108864
+    case 340n:
+      134217728
+    case 341n:
+      268435456
+    case 342n:
+      536870912
+    case 343n:
+      1073741824
+    case 344n:
+      0
+    case 345n:
+      0
+    case 346n:
+      0
+    case 347n:
+      0
+    case 348n:
+      0
+    case 349n:
+      0
+    case 350n:
+      0
+    case 351n:
+      0
+    case 352n:
+      0
+    case 353n:
+      0
+    case 354n:
+      0
+    case 355n:
+      0
+    case 356n:
+      0
+    case 357n:
+      0
+    case 358n:
+      0
+    case 359n:
+      0
+    case 360n:
+      0
+    case 361n:
+      0
+    case 362n:
+      0
+    case 363n:
+      0
+    case 364n:
+      0
+    case 365n:
+      0
+    case 366n:
+      0
+    case 367n:
+      0
+    case 368n:
+      0
+    case 369n:
+      0
+    case 370n:
+      0
+    case 371n:
+      0
+    case 372n:
+      0
+    case 373n:
+      0
+    case 374n:
+      0
+    case 375n:
+      0
+    case 376n:
+      0
+    case 377n:
+      0
+    case 378n:
+      0
+    case 379n:
+      0
+    case 380n:
+      0
+    case 381n:
+      0
+    case 382n:
+      0
+    case 383n:
+      0
+    case 384n:
+      0
+    case 385n:
+      0
+    case 386n:
+      0
+    case 387n:
+      0
+    case 388n:
+      0
+    case 389n:
+      0
+    case 390n:
+      0
+    case 391n:
+      0
+    case 392n:
+      0
+    case 393n:
+      1
+    case 394n:
+      2
+    case 395n:
+      4
+    case 396n:
+      8
+    case 397n:
+      16
+    case 398n:
+      32
+    case 399n:
+      64
+    case 400n:
+      0
+    case 401n:
+      256
+    case 402n:
+      513
+    case 403n:
+      1026
+    case 404n:
+      2052
+    case 405n:
+      4104
+    case 406n:
+      8208
+    case 407n:
+      16416
+    case 408n:
+      0
+    case 409n:
+      65536
+    case 410n:
+      131328
+    case 411n:
+      262657
+    case 412n:
+      525314
+    case 413n:
+      1050628
+    case 414n:
+      2101256
+    case 415n:
+      4202512
+    case 416n:
+      0
+    case 417n:
+      16777216
+    case 418n:
+      33619968
+    case 419n:
+      67240192
+    case 420n:
+      134480385
+    case 421n:
+      268960770
+    case 422n:
+      537921540
+    case 423n:
+      1075843080
+    case 424n:
+      0
+    case 425n:
+      0
+    case 426n:
+      16777216
+    case 427n:
+      33619968
+    case 428n:
+      67240192
+    case 429n:
+      134480385
+    case 430n:
+      268960770
+    case 431n:
+      537921540
+    case 432n:
+      0
+    case 433n:
+      0
+    case 434n:
+      0
+    case 435n:
+      16777216
+    case 436n:
+      33619968
+    case 437n:
+      67240192
+    case 438n:
+      134480385
+    case 439n:
+      268960770
+    case 440n:
+      0
+    case 441n:
+      0
+    case 442n:
+      0
+    case 443n:
+      0
+    case 444n:
+      16777216
+    case 445n:
+      33619968
+    case 446n:
+      67240192
+    case 447n:
+      134480385
+    case 448n:
+      0
+    case 449n:
+      0
+    case 450n:
+      0
+    case 451n:
+      0
+    case 452n:
+      0
+    case 453n:
+      0
+    case 454n:
+      0
+    case 455n:
+      0
+    case 456n:
+      2
+    case 457n:
+      4
+    case 458n:
+      8
+    case 459n:
+      16
+    case 460n:
+      32
+    case 461n:
+      64
+    case 462n:
+      128
+    case 463n:
+      0
+    case 464n:
+      516
+    case 465n:
+      1032
+    case 466n:
+      2064
+    case 467n:
+      4128
+    case 468n:
+      8256
+    case 469n:
+      16512
+    case 470n:
+      32768
+    case 471n:
+      0
+    case 472n:
+      132104
+    case 473n:
+      264208
+    case 474n:
+      528416
+    case 475n:
+      1056832
+    case 476n:
+      2113664
+    case 477n:
+      4227072
+    case 478n:
+      8388608
+    case 479n:
+      0
+    case 480n:
+      33818640
+    case 481n:
+      67637280
+    case 482n:
+      135274560
+    case 483n:
+      270549120
+    case 484n:
+      541097984
+    case 485n:
+      1082130432
+    case 486n:
+      2147483648
+    case 487n:
+      0
+    case 488n:
+      67637280
+    case 489n:
+      135274560
+    case 490n:
+      270549120
+    case 491n:
+      541097984
+    case 492n:
+      1082130432
+    case 493n:
+      2147483648
+    case 494n:
+      0
+    case 495n:
+      0
+    case 496n:
+      135274560
+    case 497n:
+      270549120
+    case 498n:
+      541097984
+    case 499n:
+      1082130432
+    case 500n:
+      2147483648
+    case 501n:
+      0
+    case 502n:
+      0
+    case 503n:
+      0
+    case 504n:
+      270549120
+    case 505n:
+      541097984
+    case 506n:
+      1082130432
+    case 507n:
+      2147483648
+    case 508n:
+      0
+    case 509n:
+      0
+    case 510n:
+      0
+    case 511n:
+      0
+    case _:
+      0
+
+def ray_hi(n: Nat) -> U32:
+  match n:
+    case 0n:
+      16843009
+    case 1n:
+      33686018
+    case 2n:
+      67372036
+    case 3n:
+      134744072
+    case 4n:
+      269488144
+    case 5n:
+      538976288
+    case 6n:
+      1077952576
+    case 7n:
+      2155905152
+    case 8n:
+      16843009
+    case 9n:
+      33686018
+    case 10n:
+      67372036
+    case 11n:
+      134744072
+    case 12n:
+      269488144
+    case 13n:
+      538976288
+    case 14n:
+      1077952576
+    case 15n:
+      2155905152
+    case 16n:
+      16843009
+    case 17n:
+      33686018
+    case 18n:
+      67372036
+    case 19n:
+      134744072
+    case 20n:
+      269488144
+    case 21n:
+      538976288
+    case 22n:
+      1077952576
+    case 23n:
+      2155905152
+    case 24n:
+      16843009
+    case 25n:
+      33686018
+    case 26n:
+      67372036
+    case 27n:
+      134744072
+    case 28n:
+      269488144
+    case 29n:
+      538976288
+    case 30n:
+      1077952576
+    case 31n:
+      2155905152
+    case 32n:
+      16843008
+    case 33n:
+      33686016
+    case 34n:
+      67372032
+    case 35n:
+      134744064
+    case 36n:
+      269488128
+    case 37n:
+      538976256
+    case 38n:
+      1077952512
+    case 39n:
+      2155905024
+    case 40n:
+      16842752
+    case 41n:
+      33685504
+    case 42n:
+      67371008
+    case 43n:
+      134742016
+    case 44n:
+      269484032
+    case 45n:
+      538968064
+    case 46n:
+      1077936128
+    case 47n:
+      2155872256
+    case 48n:
+      16777216
+    case 49n:
+      33554432
+    case 50n:
+      67108864
+    case 51n:
+      134217728
+    case 52n:
+      268435456
+    case 53n:
+      536870912
+    case 54n:
+      1073741824
+    case 55n:
+      2147483648
+    case 56n:
+      0
+    case 57n:
+      0
+    case 58n:
+      0
+    case 59n:
+      0
+    case 60n:
+      0
+    case 61n:
+      0
+    case 62n:
+      0
+    case 63n:
+      0
+    case 64n:
+      0
+    case 65n:
+      0
+    case 66n:
+      0
+    case 67n:
+      0
+    case 68n:
+      0
+    case 69n:
+      0
+    case 70n:
+      0
+    case 71n:
+      0
+    case 72n:
+      0
+    case 73n:
+      0
+    case 74n:
+      0
+    case 75n:
+      0
+    case 76n:
+      0
+    case 77n:
+      0
+    case 78n:
+      0
+    case 79n:
+      0
+    case 80n:
+      0
+    case 81n:
+      0
+    case 82n:
+      0
+    case 83n:
+      0
+    case 84n:
+      0
+    case 85n:
+      0
+    case 86n:
+      0
+    case 87n:
+      0
+    case 88n:
+      0
+    case 89n:
+      0
+    case 90n:
+      0
+    case 91n:
+      0
+    case 92n:
+      0
+    case 93n:
+      0
+    case 94n:
+      0
+    case 95n:
+      0
+    case 96n:
+      0
+    case 97n:
+      0
+    case 98n:
+      0
+    case 99n:
+      0
+    case 100n:
+      0
+    case 101n:
+      0
+    case 102n:
+      0
+    case 103n:
+      0
+    case 104n:
+      1
+    case 105n:
+      2
+    case 106n:
+      4
+    case 107n:
+      8
+    case 108n:
+      16
+    case 109n:
+      32
+    case 110n:
+      64
+    case 111n:
+      128
+    case 112n:
+      257
+    case 113n:
+      514
+    case 114n:
+      1028
+    case 115n:
+      2056
+    case 116n:
+      4112
+    case 117n:
+      8224
+    case 118n:
+      16448
+    case 119n:
+      32896
+    case 120n:
+      65793
+    case 121n:
+      131586
+    case 122n:
+      263172
+    case 123n:
+      526344
+    case 124n:
+      1052688
+    case 125n:
+      2105376
+    case 126n:
+      4210752
+    case 127n:
+      8421504
+    case 128n:
+      0
+    case 129n:
+      0
+    case 130n:
+      0
+    case 131n:
+      0
+    case 132n:
+      0
+    case 133n:
+      0
+    case 134n:
+      0
+    case 135n:
+      0
+    case 136n:
+      0
+    case 137n:
+      0
+    case 138n:
+      0
+    case 139n:
+      0
+    case 140n:
+      0
+    case 141n:
+      0
+    case 142n:
+      0
+    case 143n:
+      0
+    case 144n:
+      0
+    case 145n:
+      0
+    case 146n:
+      0
+    case 147n:
+      0
+    case 148n:
+      0
+    case 149n:
+      0
+    case 150n:
+      0
+    case 151n:
+      0
+    case 152n:
+      0
+    case 153n:
+      0
+    case 154n:
+      0
+    case 155n:
+      0
+    case 156n:
+      0
+    case 157n:
+      0
+    case 158n:
+      0
+    case 159n:
+      0
+    case 160n:
+      254
+    case 161n:
+      252
+    case 162n:
+      248
+    case 163n:
+      240
+    case 164n:
+      224
+    case 165n:
+      192
+    case 166n:
+      128
+    case 167n:
+      0
+    case 168n:
+      65024
+    case 169n:
+      64512
+    case 170n:
+      63488
+    case 171n:
+      61440
+    case 172n:
+      57344
+    case 173n:
+      49152
+    case 174n:
+      32768
+    case 175n:
+      0
+    case 176n:
+      16646144
+    case 177n:
+      16515072
+    case 178n:
+      16252928
+    case 179n:
+      15728640
+    case 180n:
+      14680064
+    case 181n:
+      12582912
+    case 182n:
+      8388608
+    case 183n:
+      0
+    case 184n:
+      4261412864
+    case 185n:
+      4227858432
+    case 186n:
+      4160749568
+    case 187n:
+      4026531840
+    case 188n:
+      3758096384
+    case 189n:
+      3221225472
+    case 190n:
+      2147483648
+    case 191n:
+      0
+    case 192n:
+      0
+    case 193n:
+      0
+    case 194n:
+      0
+    case 195n:
+      0
+    case 196n:
+      0
+    case 197n:
+      0
+    case 198n:
+      0
+    case 199n:
+      0
+    case 200n:
+      0
+    case 201n:
+      0
+    case 202n:
+      0
+    case 203n:
+      0
+    case 204n:
+      0
+    case 205n:
+      0
+    case 206n:
+      0
+    case 207n:
+      0
+    case 208n:
+      0
+    case 209n:
+      0
+    case 210n:
+      0
+    case 211n:
+      0
+    case 212n:
+      0
+    case 213n:
+      0
+    case 214n:
+      0
+    case 215n:
+      0
+    case 216n:
+      0
+    case 217n:
+      0
+    case 218n:
+      0
+    case 219n:
+      0
+    case 220n:
+      0
+    case 221n:
+      0
+    case 222n:
+      0
+    case 223n:
+      0
+    case 224n:
+      0
+    case 225n:
+      1
+    case 226n:
+      3
+    case 227n:
+      7
+    case 228n:
+      15
+    case 229n:
+      31
+    case 230n:
+      63
+    case 231n:
+      127
+    case 232n:
+      0
+    case 233n:
+      256
+    case 234n:
+      768
+    case 235n:
+      1792
+    case 236n:
+      3840
+    case 237n:
+      7936
+    case 238n:
+      16128
+    case 239n:
+      32512
+    case 240n:
+      0
+    case 241n:
+      65536
+    case 242n:
+      196608
+    case 243n:
+      458752
+    case 244n:
+      983040
+    case 245n:
+      2031616
+    case 246n:
+      4128768
+    case 247n:
+      8323072
+    case 248n:
+      0
+    case 249n:
+      16777216
+    case 250n:
+      50331648
+    case 251n:
+      117440512
+    case 252n:
+      251658240
+    case 253n:
+      520093696
+    case 254n:
+      1056964608
+    case 255n:
+      2130706432
+    case 256n:
+      2151686160
+    case 257n:
+      8405024
+    case 258n:
+      32832
+    case 259n:
+      128
+    case 260n:
+      0
+    case 261n:
+      0
+    case 262n:
+      0
+    case 263n:
+      0
+    case 264n:
+      1075843080
+    case 265n:
+      2151686160
+    case 266n:
+      8405024
+    case 267n:
+      32832
+    case 268n:
+      128
+    case 269n:
+      0
+    case 270n:
+      0
+    case 271n:
+      0
+    case 272n:
+      537921540
+    case 273n:
+      1075843080
+    case 274n:
+      2151686160
+    case 275n:
+      8405024
+    case 276n:
+      32832
+    case 277n:
+      128
+    case 278n:
+      0
+    case 279n:
+      0
+    case 280n:
+      268960770
+    case 281n:
+      537921540
+    case 282n:
+      1075843080
+    case 283n:
+      2151686160
+    case 284n:
+      8405024
+    case 285n:
+      32832
+    case 286n:
+      128
+    case 287n:
+      0
+    case 288n:
+      134480384
+    case 289n:
+      268960768
+    case 290n:
+      537921536
+    case 291n:
+      1075843072
+    case 292n:
+      2151686144
+    case 293n:
+      8404992
+    case 294n:
+      32768
+    case 295n:
+      0
+    case 296n:
+      67239936
+    case 297n:
+      134479872
+    case 298n:
+      268959744
+    case 299n:
+      537919488
+    case 300n:
+      1075838976
+    case 301n:
+      2151677952
+    case 302n:
+      8388608
+    case 303n:
+      0
+    case 304n:
+      33554432
+    case 305n:
+      67108864
+    case 306n:
+      134217728
+    case 307n:
+      268435456
+    case 308n:
+      536870912
+    case 309n:
+      1073741824
+    case 310n:
+      2147483648
+    case 311n:
+      0
+    case 312n:
+      0
+    case 313n:
+      0
+    case 314n:
+      0
+    case 315n:
+      0
+    case 316n:
+      0
+    case 317n:
+      0
+    case 318n:
+      0
+    case 319n:
+      0
+    case 320n:
+      0
+    case 321n:
+      0
+    case 322n:
+      0
+    case 323n:
+      0
+    case 324n:
+      1
+    case 325n:
+      258
+    case 326n:
+      66052
+    case 327n:
+      16909320
+    case 328n:
+      0
+    case 329n:
+      0
+    case 330n:
+      0
+    case 331n:
+      1
+    case 332n:
+      258
+    case 333n:
+      66052
+    case 334n:
+      16909320
+    case 335n:
+      33818640
+    case 336n:
+      0
+    case 337n:
+      0
+    case 338n:
+      1
+    case 339n:
+      258
+    case 340n:
+      66052
+    case 341n:
+      16909320
+    case 342n:
+      33818640
+    case 343n:
+      67637280
+    case 344n:
+      0
+    case 345n:
+      1
+    case 346n:
+      258
+    case 347n:
+      66052
+    case 348n:
+      16909320
+    case 349n:
+      33818640
+    case 350n:
+      67637280
+    case 351n:
+      135274560
+    case 352n:
+      0
+    case 353n:
+      256
+    case 354n:
+      66048
+    case 355n:
+      16909312
+    case 356n:
+      33818624
+    case 357n:
+      67637248
+    case 358n:
+      135274496
+    case 359n:
+      270548992
+    case 360n:
+      0
+    case 361n:
+      65536
+    case 362n:
+      16908288
+    case 363n:
+      33816576
+    case 364n:
+      67633152
+    case 365n:
+      135266304
+    case 366n:
+      270532608
+    case 367n:
+      541065216
+    case 368n:
+      0
+    case 369n:
+      16777216
+    case 370n:
+      33554432
+    case 371n:
+      67108864
+    case 372n:
+      134217728
+    case 373n:
+      268435456
+    case 374n:
+      536870912
+    case 375n:
+      1073741824
+    case 376n:
+      0
+    case 377n:
+      0
+    case 378n:
+      0
+    case 379n:
+      0
+    case 380n:
+      0
+    case 381n:
+      0
+    case 382n:
+      0
+    case 383n:
+      0
+    case 384n:
+      0
+    case 385n:
+      0
+    case 386n:
+      0
+    case 387n:
+      0
+    case 388n:
+      0
+    case 389n:
+      0
+    case 390n:
+      0
+    case 391n:
+      0
+    case 392n:
+      0
+    case 393n:
+      0
+    case 394n:
+      0
+    case 395n:
+      0
+    case 396n:
+      0
+    case 397n:
+      0
+    case 398n:
+      0
+    case 399n:
+      0
+    case 400n:
+      0
+    case 401n:
+      0
+    case 402n:
+      0
+    case 403n:
+      0
+    case 404n:
+      0
+    case 405n:
+      0
+    case 406n:
+      0
+    case 407n:
+      0
+    case 408n:
+      0
+    case 409n:
+      0
+    case 410n:
+      0
+    case 411n:
+      0
+    case 412n:
+      0
+    case 413n:
+      0
+    case 414n:
+      0
+    case 415n:
+      0
+    case 416n:
+      0
+    case 417n:
+      0
+    case 418n:
+      0
+    case 419n:
+      0
+    case 420n:
+      0
+    case 421n:
+      0
+    case 422n:
+      0
+    case 423n:
+      0
+    case 424n:
+      0
+    case 425n:
+      1
+    case 426n:
+      2
+    case 427n:
+      4
+    case 428n:
+      8
+    case 429n:
+      16
+    case 430n:
+      32
+    case 431n:
+      64
+    case 432n:
+      0
+    case 433n:
+      256
+    case 434n:
+      513
+    case 435n:
+      1026
+    case 436n:
+      2052
+    case 437n:
+      4104
+    case 438n:
+      8208
+    case 439n:
+      16416
+    case 440n:
+      0
+    case 441n:
+      65536
+    case 442n:
+      131328
+    case 443n:
+      262657
+    case 444n:
+      525314
+    case 445n:
+      1050628
+    case 446n:
+      2101256
+    case 447n:
+      4202512
+    case 448n:
+      0
+    case 449n:
+      0
+    case 450n:
+      0
+    case 451n:
+      0
+    case 452n:
+      0
+    case 453n:
+      0
+    case 454n:
+      0
+    case 455n:
+      0
+    case 456n:
+      0
+    case 457n:
+      0
+    case 458n:
+      0
+    case 459n:
+      0
+    case 460n:
+      0
+    case 461n:
+      0
+    case 462n:
+      0
+    case 463n:
+      0
+    case 464n:
+      0
+    case 465n:
+      0
+    case 466n:
+      0
+    case 467n:
+      0
+    case 468n:
+      0
+    case 469n:
+      0
+    case 470n:
+      0
+    case 471n:
+      0
+    case 472n:
+      0
+    case 473n:
+      0
+    case 474n:
+      0
+    case 475n:
+      0
+    case 476n:
+      0
+    case 477n:
+      0
+    case 478n:
+      0
+    case 479n:
+      0
+    case 480n:
+      0
+    case 481n:
+      0
+    case 482n:
+      0
+    case 483n:
+      0
+    case 484n:
+      0
+    case 485n:
+      0
+    case 486n:
+      0
+    case 487n:
+      0
+    case 488n:
+      2
+    case 489n:
+      4
+    case 490n:
+      8
+    case 491n:
+      16
+    case 492n:
+      32
+    case 493n:
+      64
+    case 494n:
+      128
+    case 495n:
+      0
+    case 496n:
+      516
+    case 497n:
+      1032
+    case 498n:
+      2064
+    case 499n:
+      4128
+    case 500n:
+      8256
+    case 501n:
+      16512
+    case 502n:
+      32768
+    case 503n:
+      0
+    case 504n:
+      132104
+    case 505n:
+      264208
+    case 506n:
+      528416
+    case 507n:
+      1056832
+    case 508n:
+      2113664
+    case 509n:
+      4227072
+    case 510n:
+      8388608
+    case 511n:
+      0
+    case _:
+      0
+
+def rays_lo(n: Nat) -> U32:
+  match n:
+    case 0n:
+      151323646
+    case 1n:
+      302647293
+    case 2n:
+      605359867
+    case 3n:
+      1227496695
+    case 4n:
+      2454993135
+    case 5n:
+      615018719
+    case 6n:
+      1213259967
+    case 7n:
+      2426454143
+    case 8n:
+      84147715
+    case 9n:
+      168295687
+    case 10n:
+      353303310
+    case 11n:
+      706541340
+    case 12n:
+      1413017400
+    case 13n:
+      2825969520
+    case 14n:
+      1356906464
+    case 15n:
+      2696970176
+    case 16n:
+      66978565
+    case 17n:
+      134022922
+    case 18n:
+      251334165
+    case 19n:
+      485956650
+    case 20n:
+      955201620
+    case 21n:
+      1893691560
+    case 22n:
+      3770671184
+    case 23n:
+      3229597856
+    case 24n:
+      4261610761
+    case 25n:
+      4245096978
+    case 26n:
+      4212004132
+    case 27n:
+      4145818185
+    case 28n:
+      4013446290
+    case 29n:
+      3748702244
+    case 30n:
+      3219148872
+    case 31n:
+      2143330448
+    case 32n:
+      50661649
+    case 33n:
+      118100514
+    case 34n:
+      236266564
+    case 35n:
+      472533384
+    case 36n:
+      945066513
+    case 37n:
+      1890067490
+    case 38n:
+      3763357764
+    case 39n:
+      3231748232
+    case 40n:
+      84480289
+    case 41n:
+      168960578
+    case 42n:
+      354698372
+    case 43n:
+      709462024
+    case 44n:
+      1418858768
+    case 45n:
+      2820940321
+    case 46n:
+      1346913346
+    case 47n:
+      2693826692
+    case 48n:
+      152117569
+    case 49n:
+      304235138
+    case 50n:
+      608470020
+    case 51n:
+      1233651720
+    case 52n:
+      2450591760
+    case 53n:
+      606216480
+    case 54n:
+      1212432961
+    case 55n:
+      2424865922
+    case 56n:
+      287392129
+    case 57n:
+      574784002
+    case 58n:
+      1149502468
+    case 59n:
+      2282227720
+    case 60n:
+      286265360
+    case 61n:
+      572596256
+    case 62n:
+      1145192768
+    case 63n:
+      2290385537
+    case _:
+      0
+
+def rays_hi(n: Nat) -> U32:
+  match n:
+    case 0n:
+      2168529169
+    case 1n:
+      42091042
+    case 2n:
+      67404868
+    case 3n:
+      134744200
+    case 4n:
+      269488145
+    case 5n:
+      538976546
+    case 6n:
+      1078018628
+    case 7n:
+      2172814472
+    case 8n:
+      1092686089
+    case 9n:
+      2185372178
+    case 10n:
+      75777060
+    case 11n:
+      134776905
+    case 12n:
+      269488530
+    case 13n:
+      539042340
+    case 14n:
+      1094861896
+    case 15n:
+      2189723792
+    case 16n:
+      554764549
+    case 17n:
+      1109529098
+    case 18n:
+      2219058197
+    case 19n:
+      143149354
+    case 20n:
+      269587028
+    case 21n:
+      555885736
+    case 22n:
+      1111771216
+    case 23n:
+      2223542432
+    case 24n:
+      285803779
+    case 25n:
+      571607559
+    case 26n:
+      1143215374
+    case 27n:
+      2286496284
+    case 28n:
+      294802488
+    case 29n:
+      572827760
+    case 30n:
+      1145589984
+    case 31n:
+      2291179712
+    case 32n:
+      151323646
+    case 33n:
+      302647293
+    case 34n:
+      605359867
+    case 35n:
+      1227496695
+    case 36n:
+      2454993135
+    case 37n:
+      615018719
+    case 38n:
+      1213259967
+    case 39n:
+      2426454143
+    case 40n:
+      84147715
+    case 41n:
+      168295687
+    case 42n:
+      353303310
+    case 43n:
+      706541340
+    case 44n:
+      1413017400
+    case 45n:
+      2825969520
+    case 46n:
+      1356906464
+    case 47n:
+      2696970176
+    case 48n:
+      66978565
+    case 49n:
+      134022922
+    case 50n:
+      251334165
+    case 51n:
+      485956650
+    case 52n:
+      955201620
+    case 53n:
+      1893691560
+    case 54n:
+      3770671184
+    case 55n:
+      3229597856
+    case 56n:
+      4261610761
+    case 57n:
+      4245096978
+    case 58n:
+      4212004132
+    case 59n:
+      4145818185
+    case 60n:
+      4013446290
+    case 61n:
+      3748702244
+    case 62n:
+      3219148872
+    case 63n:
+      2143330448
+    case _:
+      0
+

@@ -233,6 +233,34 @@ def leaper_tables() -> str:
                       nat_table("katt_lo", kl), nat_table("katt_hi", kh)])
 
 
+def ray_tables() -> str:
+    """Rays (squares strictly beyond the origin up to the edge) for the
+    eight directions of board.bend's dir() table (0x88 offsets 16, -16, 1,
+    -1, 17, 15, -17, -15), index dir * 64 + square64, lo / hi halves."""
+    steps = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (-1, 1), (-1, -1), (1, -1)]
+    lo, hi = [], []
+    for df, dr in steps:
+        for sq in range(64):
+            f, r = sq % 8 + df, sq // 8 + dr
+            b = 0
+            while 0 <= f < 8 and 0 <= r < 8:
+                b |= 1 << (r * 8 + f)
+                f += df
+                r += dr
+            lo.append(b & 0xFFFFFFFF)
+            hi.append(b >> 32)
+    ul, uh = [], []
+    for sq in range(64):
+        a = b = 0
+        for i in range(8):
+            a |= lo[i * 64 + sq]
+            b |= hi[i * 64 + sq]
+        ul.append(a)
+        uh.append(b)
+    return "\n".join([nat_table("ray_lo", lo), nat_table("ray_hi", hi),
+                      nat_table("rays_lo", ul), nat_table("rays_hi", uh)])
+
+
 def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     dst = os.path.join(here, "..", "src", "tables.bend")
@@ -252,6 +280,7 @@ def main() -> None:
         f.write(zobrist_tables() + "\n")
         f.write(lmr_table() + "\n")
         f.write(leaper_tables() + "\n")
+        f.write(ray_tables() + "\n")
     print("wrote", os.path.normpath(dst))
 
 

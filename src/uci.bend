@@ -1030,7 +1030,7 @@ def uci.see.b?(+p: B.Pos, +o: S.Opt, f: File, buf: String, +mv: U32, r: Array<U3
 
 def uci.see?(+p: B.Pos, +o: S.Opt, f: File, buf: String, r: Array<U32> & U32) -> IO(Unit):
   (m, +mv) = r
-  uci.see.b(p, o, f, buf, mv, G.see(m, mv, B.P.side(p)))
+  uci.see.b(p, o, f, buf, mv, G.see(m, p, mv))
 
 def uci.cmd.b?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, rest: List<&2, String>,
                code: Nat) -> IO(Unit):
