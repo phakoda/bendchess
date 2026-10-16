@@ -239,7 +239,7 @@ def budget.set(m: Array<U32>, +n: U32) -> Array<U32>:
 # the driver's state between iterations: sp = nodes spent by the last
 # iteration, stab = iterations the best move has stayed the same
 type Dr is Data:
-  Dr{p: B.Pos, o: S.Opt, lim: Lim, t0: Nat, chk: Bool, used: U32, best: U32, score: U32, npms: U32,
+  Dr{p: B.Pos, o: S.Opt, lim: Lim, t0: Nat, chk: Bool, used: U32, best: U32, score: U32, npms: U32, sp2: U32,
      verbose: Bool, sp: U32, stab: U32}
 
 def Dr.fin.b(+score: U32, r: Array<U32> & U32) -> IO(Array<U32> & (U32 & U32)):
@@ -250,7 +250,7 @@ def Dr.fin.b(+score: U32, r: Array<U32> & U32) -> IO(Array<U32> & (U32 & U32)):
 # near-equal one that sets the opponent more problems (root.bend)
 def Dr.fin(m: Array<U32>, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
   match dr:
-    case Dr{+p, +o, lim, t0, +chk, used, +best, +score, npms, verbose, sp, stab}:
+    case Dr{+p, +o, lim, t0, +chk, used, +best, +score, npms, sp2, verbose, sp, stab}:
       Dr.fin.b(score, R.practical(m, p, o, d, best, score))
 
 def id.info(+d: U32, +s: U32, +used: U32, +ms: U32, +seld: U32, pv: String) -> String:
@@ -302,8 +302,21 @@ def tp.factor(+tp: U32, +eff: U32, +d: U32, +s: U32, +score0: U32, +changed: Boo
   +f2 = U32.min(U32.max(U32.div(U32.mul(U32.div(U32.mul(fs, fd), 100), fe), 100), 45), 250)
   C.sel(U32.is_ge(tp, 2), f2, f1)
 
+# Learned iteration-cost model (tools/costmodel.py, results/costmodel.json):
+# log2(cost(d+1) / cost(d)) ~ 1.9065 - 0.4292 log2 g1 - 0.2034 log2 g2
+#   - 0.0206 d - 0.357 changed - 0.0398 log2(|dscore| + 1)
+# with g1, g2 the last two growth factors (test MAE 0.72 bits against
+# 1.12 for "same growth as last time"). Answers the predicted growth x 10,
+# with a +0.5 bit safety margin.
+def growth.model(+spent: U32, +sp: U32, +sp2: U32, +d: U32, +changed: Bool, +ds: U32) -> U32:
+  +lg1 = F32.log2((U32.to_f32(U32.max(spent, 1)) / U32.to_f32(U32.max(sp, 1)) : F32))
+  +lg2 = F32.log2((U32.to_f32(U32.max(sp, 1)) / U32.to_f32(U32.max(sp2, 1)) : F32))
+  +lds = F32.log2((U32.to_f32(U32.min(ds, 300)) + 1.0 : F32))
+  +x = (2.4065 - 0.4292 * lg1 - 0.2034 * lg2 - 0.0206 * U32.to_f32(d) - 0.357 * U32.to_f32(C.b2u(changed)) - 0.0398 * lds : F32)
+  U32.min(U32.max(F32.to_u32((F32.pow(2.0, F32.min(F32.max(x, 0.0), 4.0)) * 10.0 : F32)), 12), 160)
+
 def id.more(+cas: U32, +ss: U32, +tp: U32, +eff: U32, +d: U32, +s: U32, +score0: U32, +changed: Bool, +stab: U32,
-            +spent: U32, +sp: U32, +ms: U32, +rate: U32, +lim: Lim, +stop: Bool, +used: U32) -> Bool:
+            +spent: U32, +sp: U32, +sp2: U32, +ms: U32, +rate: U32, +lim: Lim, +stop: Bool, +used: U32) -> Bool:
   +base = Bool.not(stop) && U32.is_lt(d, Lim.maxd(lim)) && U32.is_lt(used, Lim.nodes(lim)) &&
     C.s.lt(C.s.abs(s), U32.sub(C.MATE(), U32.add(d, 2)))
   +f = tp.factor(tp, eff, d, s, score0, changed, stab)
@@ -311,10 +324,16 @@ def id.more(+cas: U32, +ss: U32, +tp: U32, +eff: U32, +d: U32, +s: U32, +score0:
   +soft0 = C.sel(U32.is_gt(soft, 20000000), soft, U32.div(U32.mul(soft, ss), 100))
   +soft2 = U32.min(C.sel(U32.is_gt(soft, 20000000), soft, U32.div(U32.mul(soft, f), 100)),
     U32.max(U32.div(U32.mul(Lim.hard(lim), 8), 10), soft))
-  +growth = U32.min(U32.max(U32.div(U32.mul(spent, 10), U32.max(sp, 1)), 15), 60)
+  +learned = U32.is_ge(tp, 3) && U32.is_ge(d, 3)
+  +growth = C.sel(learned, growth.model(spent, sp, sp2, d, changed, C.s.abs(U32.sub(s, score0))),
+    U32.min(U32.max(U32.div(U32.mul(spent, 10), U32.max(sp, 1)), 15), 60))
   +pred_ms = U32.div(U32.div(U32.mul(U32.min(spent, 400000000), growth), 10), U32.max(rate, 1))
   +fits = U32.is_lt(d, 4) || U32.is_ge(Lim.hard(lim), BIG()) || U32.is_le(U32.add(ms, pred_ms), Lim.hard(lim))
-  more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft0), base && U32.is_lt(ms, soft2) && fits)
+  # TimePolicy 3 also declines an iteration predicted to end far past the
+  # (scaled) soft limit, since an unfinished iteration is mostly wasted
+  +ends = Bool.not(learned) || U32.is_ge(soft, 20000000) ||
+    U32.is_le(U32.add(ms, U32.div(pred_ms, 2)), soft2)
+  more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft0), base && U32.is_lt(ms, soft2) && fits && ends)
 
 def id.done.b?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, m: Array<U32>, now: Nat) ->
   IO(Array<U32> & (U32 & U32)):
@@ -331,14 +350,14 @@ def id.done?(+d: U32, +budget: U32, dr: Dr, r: (Array<U32> & U32) & R.Ws) -> IO(
 # run iteration d with a budget derived from the time left
 def id.iter.t?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, now: Nat) -> IO(Array<U32> & (U32 & U32)):
   match dr:
-    case Dr{+p, +o, +lim, +t0, +chk, +used, +best, +score, +npms, +verbose, +sp, +stab}:
+    case Dr{+p, +o, +lim, +t0, +chk, +used, +best, +score, +npms, +sp2, +verbose, +sp, +stab}:
       +nt = S.Opt.nt(o)
       +ms = elapsed(now, t0, used, nt)
       +left_t = S.sub0(Lim.hard(lim), ms)
       +by_time = C.sel(U32.is_ge(Lim.hard(lim), BIG()), BIG(), afford(left_t, C.sel(U32.is_zero(nt), npms, nt)))
       +by_nodes = S.sub0(Lim.nodes(lim), used)
       +budget = U32.max(U32.min(by_time, by_nodes), C.sel(U32.is_eq(d, 1), 2000, 1))
-      id.done(d, budget, Dr{p, o, lim, t0, chk, used, best, score, npms, verbose, sp, stab},
+      id.done(d, budget, Dr{p, o, lim, t0, chk, used, best, score, npms, sp2, verbose, sp, stab},
         aspire(budget.set(m, budget), ws, p, d, chk, o, score))
 
 def id.next?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, more: Bool) -> IO(Array<U32> & (U32 & U32)):
@@ -353,7 +372,7 @@ def id.next?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, more: Bool) -> IO(Array<U
 
 def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat,
                 +chk: Bool, +used0: U32, +best0: U32, +score0: U32, +npms0: U32, +verbose: Bool,
-                +sp: U32, +stab: U32, +now: Nat, pv: String, ws: R.Ws, r: Array<U32> & It) -> IO(Array<U32> & (U32 & U32)):
+                +sp: U32, +sp2: U32, +stab: U32, +now: Nat, pv: String, ws: R.Ws, r: Array<U32> & It) -> IO(Array<U32> & (U32 & U32)):
   (m, it) = r
   match it:
     case It{+left, +stop, +best, +pvlen, +seld, +eff}:
@@ -367,20 +386,20 @@ def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim,
       +score2 = C.sel(stop, score0, s)
       +changed = U32.is_gt(d, 1) && U32.is_ne(best2, best0)
       +stab2 = C.sel(changed, 0, U32.add(stab, 1))
-      +more = id.more(S.Opt.cas(o), S.Opt.ss(o), S.Opt.tp(o), eff, d, s, score0, changed, stab2, spent, sp, ms,
+      +more = id.more(S.Opt.cas(o), S.Opt.ss(o), S.Opt.tp(o), eff, d, s, score0, changed, stab2, spent, sp, sp2, ms,
         C.sel(U32.is_zero(nt), npms, nt), lim, stop, used)
       do IO<Array<U32> & (U32 & U32)>:
         say(verbose && (Bool.not(stop) || U32.is_eq(d, 1)), id.info(d, s, used, ms, seld, pv))
         say(verbose && Bool.not(more), "info nodes " ++ U32.show(used) ++ " time " ++ U32.show(ms))
-        id.next(m, ws, d, Dr{p, o, lim, t0, chk, used, best2, score2, npms, verbose, spent, stab2}, more)
+        id.next(m, ws, d, Dr{p, o, lim, t0, chk, used, best2, score2, npms, sp, verbose, spent, stab2}, more)
 
 # after iteration d: report, then decide whether to go deeper
 def id.after?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & String) ->
   IO(Array<U32> & (U32 & U32)):
   match dr:
-    case Dr{+p, +o, +lim, +t0, +chk, +used0, +best0, +score0, +npms0, +verbose, +sp, +stab}:
+    case Dr{+p, +o, +lim, +t0, +chk, +used0, +best0, +score0, +npms0, +sp2, +verbose, +sp, +stab}:
       (m, pv) = r
-      id.after.b(d, budget, s, p, o, lim, t0, chk, used0, best0, score0, npms0, verbose, sp, stab, now, pv, ws,
+      id.after.b(d, budget, s, p, o, lim, t0, chk, used0, best0, score0, npms0, verbose, sp, sp2, stab, now, pv, ws,
         it.read(m))
 
 def id.done.c?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & U32) ->
@@ -394,7 +413,7 @@ def id.iter?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 &
 def think.root(+p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat, +verbose: Bool, +chk: Bool, r: Array<U32> & U32) ->
   IO(Array<U32> & (U32 & U32)):
   (m, +n) = r
-  id.iter(m, R.Ws.new(S.Opt.th(o)), 1, Dr{p, o, lim, t0, chk, 0, 0, 0, 500, verbose, 0, 0})
+  id.iter(m, R.Ws.new(S.Opt.th(o)), 1, Dr{p, o, lim, t0, chk, 0, 0, 0, 500, 0, verbose, 0, 0})
 
 def think.go(+p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat, +verbose: Bool, r: Array<U32> & Bool) ->
   IO(Array<U32> & (U32 & U32)):
@@ -558,7 +577,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name NodesTime type spin default 0 min 0 max 100000")
     IO.print("option name SyzygyPath type string default <empty>")
     IO.print("option name SoftScale type spin default 100 min 10 max 1000")
-    IO.print("option name TimePolicy type spin default 1 min 1 max 2")
+    IO.print("option name TimePolicy type spin default 1 min 1 max 3")
     IO.print("option name Threads type spin default 1 min 1 max 4")
     IO.print("option name Practical type spin default 0 min 0 max 200")
     IO.print("uciok")
