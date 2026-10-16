@@ -7,3 +7,6 @@
 | eval0_wall | t_lazy:EvalMode=0 | t_lazy | 127 / 107 / 166 | -34 [-64, -5] | [-64, -5] | 400 | 0.79 | 8.4 / 8.9 |
 | cur_vs_ref_nodes | t_bbsee | ref_v1 | 211 / 105 / 84 | +114 [+85, +145] | [+86, +144] | 400 | 1.00 | 8.1 / 7.5 |
 | fit_nodes | t_fit:EvalMode=0 | t_rays:EvalMode=0 | 146 / 111 / 143 | +3 [-26, +32] | [-27, +33] | 400 | 1.00 | 8.0 / 8.1 |
+| fit_wall | t_pack:EvalMode=0 | t_pack | 160 / 103 / 137 | +20 [-9, +50] | [-11, +51] | 400 | 0.82 | 8.3 / 8.7 |
+| cur_vs_ref_wall | t_pack | ref_v1 | 132 / 146 / 122 | +9 [-18, +36] | [-19, +37] | 400 | 0.63 | 8.9 / 9.1 |
+| tp3_nodes | t_rare:TimePolicy=3,NodesTime=100 | t_rare:NodesTime=100 | 134 / 153 / 113 | +18 [-8, +45] | [-9, +45] | 400 | 0.97 | 8.7 / 8.7 |
