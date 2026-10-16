@@ -132,14 +132,6 @@ def stopped(m: Array<U32>) -> Array<U32> & Bool:
 def rep.slot(+hidx: U32, +k: U32) -> U32:
   U32.add(B.HISTH(), U32.shln(U32.and(U32.sub(hidx, k), 4095), 1n))
 
-def rep.go?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32, go: Bool) ->
-  Array<U32> & Bool:
-  match go:
-    case False{}:
-      (m, False{})
-    case True{}:
-      rep.a(hlo, hhi, hidx, k, lim, m[rep.slot(hidx, k)])
-
 def rep?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32) ->
   Array<U32> & Bool:
   rep.go(m, hlo, hhi, hidx, k, lim, U32.is_le(k, lim))
@@ -176,6 +168,14 @@ def rep.a?(+hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32, r: Array<U32> &
   Array<U32> & Bool:
   (m, +lo) = r
   rep.b(m, hlo, hhi, hidx, k, lim, U32.is_eq(lo, hlo))
+
+def rep.go?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32, go: Bool) ->
+  Array<U32> & Bool:
+  match go:
+    case False{}:
+      (m, False{})
+    case True{}:
+      rep.a(hlo, hhi, hidx, k, lim, m[rep.slot(hidx, k)])
 
 def draw.rep(fifty: Bool, m: Array<U32>, +p: B.Pos) -> Array<U32> & Bool:
   match fifty:
@@ -303,11 +303,6 @@ def CHIST() -> U32:
 def ch.idx(+pk: U32, +ck: U32) -> U32:
   U32.add(CHIST(), U32.add(U32.mul(U32.min(pk, 768), 768), U32.min(ck, 767)))
 
-def ord.m?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
-           r: Array<U32> & U32) -> Array<U32>:
-  (m, +mv) = r
-  ord.v(side, base, i, n, ttm, k1, k2, pk, cm, mv, m[C.mv.to(mv)])
-
 def ord.go?(m: Array<U32>, +side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32,
             +k2: U32, +pk: U32, +cm: U32, go: Bool) -> Array<U32>:
   match go:
@@ -341,19 +336,17 @@ def ord.v?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U
   (m, +vic) = r
   ord.a(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, m[C.mv.from(mv)])
 
+def ord.m?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
+           r: Array<U32> & U32) -> Array<U32>:
+  (m, +mv) = r
+  ord.v(side, base, i, n, ttm, k1, k2, pk, cm, mv, m[C.mv.to(mv)])
+
 # selection: swap the largest word of m[base+i .. base+n) into slot i
 def pick.fin(+base: U32, +i: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +vi) = r
   m[U32.add(base, bi)] <- vi
   m[U32.add(base, i)] <- bv
   (m, bv)
-
-def pick.v?(+base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +v) = r
-  +better = U32.is_gt(v, bv)
-  pick.go(m, base, i, U32.add(j, 1), n, C.sel(better, j, bi), C.sel(better, v, bv),
-    U32.is_lt(U32.add(j, 1), n))
 
 def pick.go?(m: Array<U32>, +base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, go: Bool) ->
   Array<U32> & U32:
@@ -363,19 +356,19 @@ def pick.go?(m: Array<U32>, +base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv
     case False{}:
       pick.fin(base, i, bi, bv, m[U32.add(base, i)])
 
+def pick.v?(+base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +v) = r
+  +better = U32.is_gt(v, bv)
+  pick.go(m, base, i, U32.add(j, 1), n, C.sel(better, j, bi), C.sel(better, v, bv),
+    U32.is_lt(U32.add(j, 1), n))
+
 def pick.a(+base: U32, +i: U32, +n: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
   pick.go(m, base, i, U32.add(i, 1), n, i, v, U32.is_lt(U32.add(i, 1), n))
 
 def pick(m: Array<U32>, +base: U32, +i: U32, +n: U32) -> Array<U32> & U32:
   pick.a(base, i, n, m[U32.add(base, i)])
-
-def pv.copy.go?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32, go: Bool) -> Array<U32>:
-  match go:
-    case False{}:
-      m
-    case True{}:
-      pv.copy.b(dst, src, k, len, m[U32.add(src, k)])
 
 def pv.copy?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32) -> Array<U32>:
   pv.copy.go(m, dst, src, k, len, U32.is_lt(k, len))
@@ -387,6 +380,13 @@ def pv.copy.b?(+dst: U32, +src: U32, +k: U32, +len: U32, r: Array<U32> & U32) ->
   (m, +v) = r
   m[U32.add(dst, k)] <- v
   pv.copy(m, dst, src, U32.add(k, 1), len)
+
+def pv.copy.go?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32, go: Bool) -> Array<U32>:
+  match go:
+    case False{}:
+      m
+    case True{}:
+      pv.copy.b(dst, src, k, len, m[U32.add(src, k)])
 
 def pv.row(+ply: U32) -> U32:
   U32.add(B.PVT(), U32.shln(ply, 7n))
@@ -452,14 +452,6 @@ def grav.at(m: Array<U32>, +i: U32, +b: U32) -> Array<U32>:
 def hbonus(+d: U32) -> U32:
   U32.min(U32.mul(U32.mul(d, d), 32), 1600)
 
-# the malus pass over the quiet moves searched before the cutoff move
-def malus.k?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, +mv: U32, r: Array<U32> & U32) ->
-  Array<U32>:
-  (m, +pc) = r
-  m = grav.at(m, hist.idx(side, mv), C.s.neg(b))
-  m = grav.at(m, ch.idx(pk, mkey(pc, C.mv.to(mv))), C.s.neg(b))
-  malus(m, side, pk, qb, U32.add(j, 1), nq, b)
-
 def malus.mv?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +mv) = r
   malus.k(side, pk, qb, j, nq, b, mv, m[C.mv.from(mv)])
@@ -473,6 +465,14 @@ def malus.go?(m: Array<U32>, +side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, 
 
 def malus?(m: Array<U32>, +side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32) -> Array<U32>:
   malus.go(m, side, pk, qb, j, nq, b, U32.is_lt(j, nq))
+
+# the malus pass over the quiet moves searched before the cutoff move
+def malus.k?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, +mv: U32, r: Array<U32> & U32) ->
+  Array<U32>:
+  (m, +pc) = r
+  m = grav.at(m, hist.idx(side, mv), C.s.neg(b))
+  m = grav.at(m, ch.idx(pk, mkey(pc, C.mv.to(mv))), C.s.neg(b))
+  malus(m, side, pk, qb, U32.add(j, 1), nq, b)
 
 def good_quiet.b(+side: U32, +ply: U32, +depth: U32, +mv: U32, +pk: U32, +nq: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +pc) = r
@@ -498,66 +498,69 @@ def lmr.r(+d: U32, +i: U32) -> U32:
 # Node context and loop state
 # ---------------------------
 
+# sx: singular-extension state of the node: a move with bit 31 set is
+#     excluded (the node is a singularity verification search); a plain
+#     move is extended by one ply; 0 none
 type Nd is Data:
   Nd{p: B.Pos, depth: U32, beta: U32, ply: U32, pv: Bool, chk: Bool, ev: U32, base: U32,
-     n: U32, oalpha: U32, o: Opt, pk: U32, cm: U32, imp: Bool}
+     n: U32, oalpha: U32, o: Opt, pk: U32, cm: U32, imp: Bool, sx: U32}
 
 type Lp is Data:
   Lp{alpha: U32, best: U32, bmv: U32, i: U32, legal: U32, quiets: U32, nq: U32}
 
 def Nd.p(+x: Nd) -> B.Pos:
   match x:
-    case Nd{p, _, _, _, _, _, _, _, _, _, _, _, _, _}:
+    case Nd{p, _, _, _, _, _, _, _, _, _, _, _, _, _, _}:
       p
 
 def Nd.depth(+x: Nd) -> U32:
   match x:
-    case Nd{_, depth, _, _, _, _, _, _, _, _, _, _, _, _}:
+    case Nd{_, depth, _, _, _, _, _, _, _, _, _, _, _, _, _}:
       depth
 
 def Nd.beta(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, beta, _, _, _, _, _, _, _, _, _, _, _}:
+    case Nd{_, _, beta, _, _, _, _, _, _, _, _, _, _, _, _}:
       beta
 
 def Nd.ply(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, ply, _, _, _, _, _, _, _, _, _, _}:
+    case Nd{_, _, _, ply, _, _, _, _, _, _, _, _, _, _, _}:
       ply
 
 def Nd.pv(+x: Nd) -> Bool:
   match x:
-    case Nd{_, _, _, _, pv, _, _, _, _, _, _, _, _, _}:
+    case Nd{_, _, _, _, pv, _, _, _, _, _, _, _, _, _, _}:
       pv
 
 def Nd.chk(+x: Nd) -> Bool:
   match x:
-    case Nd{_, _, _, _, _, chk, _, _, _, _, _, _, _, _}:
+    case Nd{_, _, _, _, _, chk, _, _, _, _, _, _, _, _, _}:
       chk
 
 def Nd.ev(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, _, _, _, ev, _, _, _, _, _, _, _}:
+    case Nd{_, _, _, _, _, _, ev, _, _, _, _, _, _, _, _}:
       ev
 
 def Nd.base(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, _, _, _, _, base, _, _, _, _, _, _}:
+    case Nd{_, _, _, _, _, _, _, base, _, _, _, _, _, _, _}:
       base
 
 def Nd.n(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, _, _, _, _, _, n, _, _, _, _, _}:
+    case Nd{_, _, _, _, _, _, _, _, n, _, _, _, _, _, _}:
       n
 
 def Nd.oalpha(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, _, _, _, _, _, _, oalpha, _, _, _, _}:
+    case Nd{_, _, _, _, _, _, _, _, _, oalpha, _, _, _, _, _}:
       oalpha
 
 def Nd.o(+x: Nd) -> Opt:
   match x:
-    case Nd{_, _, _, _, _, _, _, _, _, _, o, _, _, _}:
+    case Nd{_, _, _, _, _, _, _, _, _, _, o, _, _, _, _}:
       o
 
 def Lp.alpha(+x: Lp) -> U32:
@@ -621,16 +624,6 @@ def pv.upd.if(m: Array<U32>, +ply: U32, +mv: U32, go: Bool) -> Array<U32>:
 def unmake.mem(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
   stopped(B.unmake(m, np, mv))
 
-def qs.upd?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & U32:
-  match lp:
-    case Lp{alpha, best, bmv, i, legal, quiets, _}:
-      +better = C.s.gt(s, best)
-      +raise = C.s.gt(s, alpha)
-      +best2 = C.sel(better, s, best)
-      qs.cut(pv.upd.if(m, Nd.ply(nd), mv, raise), nd,
-        Lp{C.sel(raise, s, alpha), best2, C.sel(better, mv, bmv), U32.add(i, 1), U32.add(legal, 1), quiets, 0},
-        best2, C.s.ge(s, Nd.beta(nd)))
-
 def qs.after.b?(r: Array<U32> & Bool, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & U32:
   match r:
     case (m, False{}):
@@ -649,7 +642,7 @@ def qs.gen?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
             +base: U32, +o: Opt, +ttm: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
   m = ord(m, B.P.side(p), base, 0, n, ttm, 0, 0, PK_NONE(), 0)
-  qs.loop(m, Nd{p, 0, beta, ply, False{}, chk, ev, base, n, alpha, o, 768, 0, False{}}, Lp{alpha, best, 0, 0, 0, 0, 0})
+  qs.loop(m, Nd{p, 0, beta, ply, False{}, chk, ev, base, n, alpha, o, 768, 0, False{}, 0}, Lp{alpha, best, 0, 0, 0, 0, 0})
 
 def qs.stand?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
               +o: Opt, +ttm: U32, cut: Bool) -> Array<U32> & U32:
@@ -822,6 +815,16 @@ def qs.cut?(m: Array<U32>, +nd: Nd, +lp: Lp, +best: U32, cut: Bool) -> Array<U32
     case False{}:
       qs.loop(m, nd, lp)
 
+def qs.upd?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & U32:
+  match lp:
+    case Lp{alpha, best, bmv, i, legal, quiets, _}:
+      +better = C.s.gt(s, best)
+      +raise = C.s.gt(s, alpha)
+      +best2 = C.sel(better, s, best)
+      qs.cut(pv.upd.if(m, Nd.ply(nd), mv, raise), nd,
+        Lp{C.sel(raise, s, alpha), best2, C.sel(better, mv, bmv), U32.add(i, 1), U32.add(legal, 1), quiets, 0},
+        best2, C.s.ge(s, Nd.beta(nd)))
+
 def corr.upd(+i: U32, +depth: U32, +diff: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +c) = r
   +d16 = U32.mul(C.s.max(C.s.min(diff, 400), C.s.neg(400)), 16)
@@ -833,6 +836,23 @@ def corr.if(m: Array<U32>, +p: B.Pos, +depth: U32, +diff: U32, go: Bool) -> Arra
   match go:
     case True{}:
       corr.upd(corr.idx(p), depth, diff, m[corr.idx(p)])
+    case False{}:
+      m
+
+def Nd.sx(+x: Nd) -> U32:
+  match x:
+    case Nd{_, _, _, _, _, _, _, _, _, _, _, _, _, _, sx}:
+      sx
+
+# a real node (not a singularity verification search)
+def Nd.real(+x: Nd) -> Bool:
+  U32.is_zero(U32.and(Nd.sx(x), 2147483648))
+
+def tt.store.if(m: Array<U32>, +p: B.Pos, +ply: U32, +depth: U32, +bound: U32, +score: U32, +mv: U32,
+                go: Bool) -> Array<U32>:
+  match go:
+    case True{}:
+      tt.store(m, p, ply, depth, bound, score, mv)
     case False{}:
       m
 
@@ -848,8 +868,8 @@ def sr.done.b(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
   +ev = Nd.ev(nd)
   m = corr.if(m, Nd.p(nd), Nd.depth(nd), U32.sub(score, ev),
     Bool.not(nolegal) && Bool.not(Nd.chk(nd)) && C.s.lt(C.s.abs(score), C.MATE_BOUND()) &&
-    ((exact && U32.is_zero(vic)) || (Bool.not(exact) && C.s.lt(score, ev))))
-  (tt.store(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), bound, score, Lp.bmv(lp)), score)
+    ((exact && U32.is_zero(vic)) || (Bool.not(exact) && C.s.lt(score, ev))) && Nd.real(nd))
+  (tt.store.if(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), bound, score, Lp.bmv(lp), Nd.real(nd)), score)
 
 def sr.done?(m: Array<U32>, +nd: Nd, +lp: Lp) -> Array<U32> & U32:
   sr.done.b(nd, lp, m[C.sq.safe(C.mv.to(Lp.bmv(lp)))])
@@ -867,15 +887,374 @@ def good_quiet.if(m: Array<U32>, +side: U32, +ply: U32, +depth: U32, +mv: U32, +
 def EV_NONE() -> U32:
   2147483648
 
-# null move: the child has no previous-move context
-def sr.nm.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & B.Pos) -> Array<U32> & U32:
+# per-ply singular-extension slot (see Nd.sx)
+def sx.slot(+ply: U32) -> U32:
+  U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 3))
+
+def Nd.pk(+x: Nd) -> U32:
+  match x:
+    case Nd{_, _, _, _, _, _, _, _, _, _, _, pk, _, _, _}:
+      pk
+
+def Lp.nq(+x: Lp) -> U32:
+  match x:
+    case Lp{_, _, _, _, _, _, nq}:
+      nq
+
+def sr.cut?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool, cut: Bool) ->
+  Array<U32> & U32:
+  match cut:
+    case False{}:
+      sr.loop(m, nd, lp)
+    case True{}:
+      m = good_quiet.if(m, B.P.side(Nd.p(nd)), Nd.ply(nd), Nd.depth(nd), mv, Nd.pk(nd), Lp.nq(lp), quiet)
+      m = corr.if(m, Nd.p(nd), Nd.depth(nd), U32.sub(s, Nd.ev(nd)),
+        quiet && Bool.not(Nd.chk(nd)) && C.s.gt(s, Nd.ev(nd)) && C.s.lt(C.s.abs(s), C.MATE_BOUND()) && Nd.real(nd))
+      (tt.store.if(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), 2, s, mv, Nd.real(nd)), s)
+
+# record a searched quiet move (for the malus) unless it caused the cutoff
+def rec.quiet(m: Array<U32>, +ply: U32, +nq: U32, +mv: U32, go: Bool) -> Array<U32>:
+  match go:
+    case True{}:
+      m[U32.add(QUIETS(), U32.add(U32.shln(ply, 6n), U32.min(nq, 63)))] <- mv
+      m
+    case False{}:
+      m
+
+def sr.upd?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool) -> Array<U32> & U32:
+  match lp:
+    case Lp{alpha, best, bmv, i, legal, quiets, nq}:
+      +better = C.s.gt(s, best)
+      +raise = C.s.gt(s, alpha)
+      +cut = C.s.ge(s, Nd.beta(nd))
+      m = rec.quiet(m, Nd.ply(nd), nq, mv, quiet && Bool.not(cut))
+      sr.cut(pv.upd.if(m, Nd.ply(nd), mv, raise), nd,
+        Lp{C.sel(raise, s, alpha), C.sel(better, s, best), C.sel(better, mv, bmv), U32.add(i, 1),
+          U32.add(legal, 1), U32.add(quiets, C.b2u(quiet)), U32.add(nq, C.b2u(quiet && Bool.not(cut)))},
+        mv, s, quiet, cut)
+
+def sr.after.b?(r: Array<U32> & Bool, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool) ->
+  Array<U32> & U32:
+  match r:
+    case (m, False{}):
+      sr.upd(m, nd, lp, mv, s, quiet)
+    case (m, True{}):
+      (m, 0)
+
+def sr.after?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +raw) = r
+  sr.after.b(unmake.mem(m, np, mv), nd, lp, mv, C.s.neg(raw), quiet)
+
+def sr.re2.b?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
+              +raw: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      sr.after(nd, lp, mv, np, quiet, (m, raw))
+    case True{}:
+      sr.after(nd, lp, mv, np, quiet,
+        search(m, np, U32.add(sub0(Nd.depth(nd), 1), C.b2u(U32.is_eq(mv, Nd.sx(nd)))), C.s.neg(Nd.beta(nd)),
+          C.s.neg(Lp.alpha(lp)), U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
+
+# research at full depth / full window when a reduced or null-window
+# search beat alpha
+def sr.re2?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +raw) = r
+  +s = C.s.neg(raw)
+  sr.re2.b(m, nd, lp, mv, np, quiet, gc, raw,
+    Nd.pv(nd) && C.s.gt(s, Lp.alpha(lp)) && C.s.lt(s, Nd.beta(nd)))
+
+def sr.re1.b?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
+              +raw: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      sr.re2(nd, lp, mv, np, quiet, gc, (m, raw))
+    case True{}:
+      +a = Lp.alpha(lp)
+      sr.re2(nd, lp, mv, np, quiet, gc,
+        search(m, np, sub0(Nd.depth(nd), 1), C.s.neg(U32.add(a, 1)), C.s.neg(a),
+          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
+
+def sr.re1?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool, +red: U32,
+            r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +raw) = r
+  sr.re1.b(m, nd, lp, mv, np, quiet, gc, raw,
+    U32.is_gt(red, 0) && C.s.gt(C.s.neg(raw), Lp.alpha(lp)))
+
+def sr.child?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
+              +red: U32, first: Bool) -> Array<U32> & U32:
+  match first:
+    case True{}:
+      sr.after(nd, lp, mv, np, quiet,
+        search(m, np, U32.add(sub0(Nd.depth(nd), 1), C.b2u(U32.is_eq(mv, Nd.sx(nd)))), C.s.neg(Nd.beta(nd)),
+          C.s.neg(Lp.alpha(lp)), U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
+    case False{}:
+      +a = Lp.alpha(lp)
+      sr.re1(nd, lp, mv, np, quiet, gc, red,
+        search(m, np, sub0(sub0(Nd.depth(nd), 1), red), C.s.neg(U32.add(a, 1)), C.s.neg(a),
+          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
+
+# reduction for a late quiet move (0 when LMR does not apply). The ordering
+# key (history + continuation history; killers/countermove high) shifts it:
+# well-scoring quiets are reduced one ply less, badly scoring ones one more.
+# CAS level 3 adds a ply in very wide nodes (> 40 moves).
+def sr.red(+nd: Nd, +lp: Lp, +key: U32, +quiet: Bool, +gc: Bool) -> U32:
+  +d = Nd.depth(nd)
+  +k = U32.add(Lp.legal(lp), 1)
+  +ok = Opt.lmr(Nd.o(nd)) && quiet && Bool.not(gc) && Bool.not(Nd.chk(nd)) &&
+    U32.is_ge(d, 3) && U32.is_gt(k, 3)
+  +wide = C.b2u(U32.is_ge(Opt.cas(Nd.o(nd)), 3) && U32.is_gt(Nd.n(nd), 40) && U32.is_gt(k, 8))
+  +good = C.b2u(U32.is_ge(key, 13000))
+  +poor = C.b2u(U32.is_lt(key, 5000))
+  +r0 = U32.add(U32.add(sub0(sub0(lmr.r(d, k), C.b2u(Nd.pv(nd))), good), wide), poor)
+  C.sel(ok, U32.min(r0, sub0(d, 2)), 0)
+
+def sr.prune?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
+              prune: Bool) -> Array<U32> & U32:
+  match prune:
+    case True{}:
+      sr.loop(B.unmake(m, np, mv), nd, Lp.pruned(lp))
+    case False{}:
+      sr.child(m, nd, lp, mv, np, quiet, gc, sr.red(nd, lp, key, quiet, gc), U32.is_zero(Lp.legal(lp)))
+
+# late-move pruning threshold: more quiet moves are tried when improving
+def lmp.max(+d: U32, +imp: Bool) -> U32:
+  U32.div(U32.add(3, U32.mul(d, d)), C.sel(imp, 1, 2))
+
+def Nd.imp(+x: Nd) -> Bool:
+  match x:
+    case Nd{_, _, _, _, _, _, _, _, _, _, _, _, _, imp, _}:
+      imp
+
+def sr.gc?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
+  (m, +gc) = r
+  +quiet = U32.is_zero(B.P.cap(np)) && Bool.not(C.mv.is_promo(mv))
+  +d = Nd.depth(nd)
+  +base = Opt.prune(Nd.o(nd)) && Bool.not(Nd.pv(nd)) && Bool.not(Nd.chk(nd)) && Bool.not(gc) &&
+    U32.is_gt(Lp.legal(lp), 0) && U32.is_le(d, 3) &&
+    C.s.gt(Lp.best(lp), C.s.neg(C.MATE_BOUND()))
+  +futile = C.s.le(U32.add(Nd.ev(nd), U32.add(100, U32.mul(d, 120))), Lp.alpha(lp))
+  +late = U32.is_ge(Lp.quiets(lp), lmp.max(d, Nd.imp(nd)))
+  # history pruning: quiet moves with a clearly bad history score (the
+  # ordering key encodes history + continuation history, 9000 = neutral)
+  +hbad = U32.is_lt(key, U32.sub(9000, U32.mul(d, 1100)))
+  # SEE pruning: captures re-keyed as losing by the lazy SEE
+  +badcap = Bool.not(quiet) && U32.is_lt(key, 30)
+  sr.prune(m, nd, lp, mv, key, np, quiet, gc, base && ((quiet && (futile || late || hbad)) || badcap))
+
+def sr.legal?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
+  match r:
+    case (m, True{}):
+      sr.loop(B.unmake(m, np, mv), nd, Lp.skip(lp))
+    case (m, False{}):
+      sr.gc(nd, lp, mv, key, np, G.gchk(m, np, mv))
+
+# after making a move at this node: tell the child which move led to it
+def sr.made?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & B.Pos) -> Array<U32> & U32:
   (m, +np) = r
-  +red = U32.add(3, U32.div(depth, 6))
-  m[U32.add(B.PLYAUX(), U32.shln(U32.add(ply, 1), 2n))] <- PK_NONE()
-  sr.nm.b(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
-    search(m, np, sub0(depth, U32.add(red, 1)), C.s.neg(beta), C.s.neg(U32.sub(beta, 1)),
-      U32.add(ply, 1), False{}, False{}, o))
+  m[U32.add(B.PLYAUX(), U32.shln(U32.add(Nd.ply(nd), 1), 2n))] <- mkey(B.P.mvd(np), C.mv.to(mv))
+  sr.legal(nd, lp, mv, key, np, G.illegal(m, np, mv, Nd.chk(nd)))
+
+# Lazy SEE: a capture by a more valuable piece is checked by SEE only when
+# the move picker reaches it; a losing one is re-keyed as a bad capture
+# and the picker runs again (most nodes cut off before this happens)
+def sr.pk.d?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, bad: Bool) -> Array<U32> & U32:
+  match bad:
+    case True{}:
+      m[U32.add(Nd.base(nd), Lp.i(lp))] <- U32.or(mv, U32.shln(U32.add(20, C.pc.type(vic)), 17n))
+      sr.loop(m, nd, lp)
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
+
+def sr.pk.s?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sv) = r
+  sr.pk.d(m, nd, lp, mv, key, vic, C.s.lt(sv, 0))
+
+def sr.pk.c?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, need: Bool) -> Array<U32> & U32:
+  match need:
+    case True{}:
+      sr.pk.s(nd, lp, mv, key, vic, G.see(m, mv, B.P.side(Nd.p(nd))))
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
+
+def sr.pk.at?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +att) = r
+  sr.pk.c(m, nd, lp, mv, key, vic, U32.is_ne(vic, 0) &&
+    U32.is_gt(G.see.val(U32.to_nat(C.pc.type(att))), G.see.val(U32.to_nat(C.pc.type(vic)))))
+
+def sr.pk.v?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +vic) = r
+  sr.pk.at(nd, lp, mv, key, vic, m[C.mv.from(mv)])
+
+def sr.pk.a?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, capband: Bool) -> Array<U32> & U32:
+  match capband:
+    case True{}:
+      sr.pk.v(nd, lp, mv, key, m[C.mv.to(mv)])
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
+
+def sr.pk.x?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, skip: Bool) -> Array<U32> & U32:
+  match skip:
+    case True{}:
+      sr.loop(m, nd, Lp.skip(lp))
+    case False{}:
+      sr.pk.a(m, nd, lp, mv, key, U32.is_ge(key, 20000) && U32.is_lt(key, 30000) && U32.is_lt(C.mv.flag(mv), 3))
+
+def sr.picked?(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +mvk) = r
+  +mv = C.mv.bare(mvk)
+  sr.pk.x(m, nd, lp, mv, U32.shrn(mvk, 17n), U32.is_eq(U32.or(mv, 2147483648), Nd.sx(nd)))
+
+def sr.loop.go?(m: Array<U32>, +nd: Nd, +lp: Lp, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      sr.done(m, nd, lp)
+    case True{}:
+      sr.picked(nd, lp, pick(m, Nd.base(nd), Lp.i(lp), Nd.n(nd)))
+
+def sr.loop?(m: Array<U32>, +nd: Nd, +lp: Lp) -> Array<U32> & U32:
+  sr.loop.go(m, nd, lp, U32.is_lt(Lp.i(lp), Nd.n(nd)))
+
+def sr.sx?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
+           +imp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sx) = r
+  m[sx.slot(ply)] <- 0
+  m = ord(m, B.P.side(p), base, 0, n, ttm, k1, k2, pk, cm)
+  sr.loop(m, Nd{p, depth, beta, ply, pv, chk, ev, base, n, alpha, o, pk, cm, U32.is_ne(imp, 0), sx},
+    Lp{alpha, U32.add(C.s.neg(C.INF()), 0), 0, 0, 0, 0, 0})
+
+def sr.imp?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
+            r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +imp) = r
+  sr.sx(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm, imp, m[sx.slot(ply)])
+
+def sr.cm?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +cm) = r
+  sr.imp(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm,
+    m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))])
+
+def sr.pk?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +pk0) = r
+  +pk = C.sel(U32.is_zero(ply), PK_NONE(), U32.min(pk0, 768))
+  sr.cm(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, m[U32.add(CMOVE(), pk)])
+
+def sr.k2?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +k2) = r
+  sr.pk(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, m[U32.add(B.PLYAUX(), U32.shln(ply, 2n))])
+
+def sr.k1?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +k1) = r
+  sr.k2(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1,
+    m[U32.add(U32.add(B.KILLERS(), U32.shln(ply, 1n)), 1)])
+
+# CAS level 3 (in-tree allocation): a node with at most 3 pseudo-legal
+# moves is a forced line (cheap to resolve, often decisive): +1 ply
+def sr.gen?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +n) = r
+  +ext = C.b2u(U32.is_ge(Opt.cas(o), 3) && U32.is_le(n, 3) && U32.is_lt(ply, 40))
+  sr.k1(p, U32.add(depth, ext), alpha, beta, ply, chk, ev, pv, ttm, o, base, n,
+    m[U32.add(B.KILLERS(), U32.shln(ply, 1n))])
+
+# internal iterative reduction: without a TT move a deep node is likely
+# mis-ordered, so it is searched one ply shallower
+def sr.moves.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+                 +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
+  +base = ply_moves(ply)
+  +d2 = C.sel(U32.is_zero(ttm) && U32.is_ge(depth, 4), U32.sub(depth, 1), depth)
+  sr.gen(p, d2, alpha, beta, ply, chk, ev, pv, ttm, o, base, G.gen(m, p, base, 0))
+
+def se.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +sbeta: U32, single: Bool, mcut: Bool) -> Array<U32> & U32:
+  match single mcut:
+    case True{} _:
+      m[sx.slot(ply)] <- ttm
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+    case False{} True{}:
+      (m, sbeta)
+    case False{} False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+# Singular extensions: at a deep node whose TT entry (deep enough, lower or
+# exact bound) proposes ttm, search the other moves at half depth against
+# sbeta = ttsc - 2 * depth. All failing low: ttm is singular and is
+# extended by one ply. Failing high with sbeta >= beta: several moves beat
+# beta (multi-cut), answer sbeta.
+def se.res?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+            +ttm: U32, +o: Opt, +sbeta: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  +single = C.s.lt(v, sbeta)
+  se.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta, single,
+    Bool.not(single) && C.s.ge(sbeta, beta) && Bool.not(pv))
+
+def se.run?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +sc: U32, ok: Bool) -> Array<U32> & U32:
+  match ok:
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+    case True{}:
+      +sbeta = U32.sub(sc, U32.mul(depth, 2))
+      m[sx.slot(ply)] <- U32.or(ttm, 2147483648)
+      se.res(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta,
+        sr.moves.go(m, p, U32.div(U32.sub(depth, 1), 2), U32.sub(sbeta, 1), sbeta, ply, chk, ev, False{}, ttm, o))
+
+def se.d?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +data: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sc0) = r
+  +bnd = U32.and(U32.shrn(data, 17n), 3)
+  +ttd = U32.and(U32.shrn(data, 19n), 255)
+  +sc = tt.from(sc0, ply)
+  se.run(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sc,
+    U32.is_eq(U32.and(data, 131071), ttm) && U32.is_ge(bnd, 2) && U32.is_ge(U32.add(ttd, 3), depth) &&
+    C.s.lt(C.s.abs(sc), C.MATE_BOUND()))
+
+def se.c?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +data) = r
+  se.d(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, data, m[U32.add(i, 2)])
+
+def se.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+          +pv: Bool, +ttm: U32, +o: Opt, +i: U32, hit: Bool) -> Array<U32> & U32:
+  match hit:
+    case True{}:
+      se.c(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[U32.add(i, 1)])
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+def se.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +lock) = r
+  se.b(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, U32.is_eq(lock, B.P.hhi(p)))
+
+def se.chk?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, cand: Bool) -> Array<U32> & U32:
+  match cand:
+    case True{}:
+      +i = tt.idx(B.P.hlo(p))
+      se.a(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[i])
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+def sr.moves.x?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+                +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sx0) = r
+  se.chk(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
+    U32.is_zero(sx0) && U32.is_ge(depth, 8) && U32.is_ne(ttm, 0) && U32.is_gt(ply, 0))
+
+def sr.moves?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+              +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
+  sr.moves.x(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, m[sx.slot(ply)])
 
 def sr.nm?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
            +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, go: Bool) -> Array<U32> & U32:
@@ -1000,277 +1379,6 @@ def search?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply
   m[U32.add(B.PVLEN(), ply)] <- 0
   sr.a(p, depth, alpha, beta, ply, nullok, chk, o, tick(m))
 
-def Nd.pk(+x: Nd) -> U32:
-  match x:
-    case Nd{_, _, _, _, _, _, _, _, _, _, _, pk, _, _}:
-      pk
-
-def Lp.nq(+x: Lp) -> U32:
-  match x:
-    case Lp{_, _, _, _, _, _, nq}:
-      nq
-
-def sr.cut?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool, cut: Bool) ->
-  Array<U32> & U32:
-  match cut:
-    case False{}:
-      sr.loop(m, nd, lp)
-    case True{}:
-      m = good_quiet.if(m, B.P.side(Nd.p(nd)), Nd.ply(nd), Nd.depth(nd), mv, Nd.pk(nd), Lp.nq(lp), quiet)
-      m = corr.if(m, Nd.p(nd), Nd.depth(nd), U32.sub(s, Nd.ev(nd)),
-        quiet && Bool.not(Nd.chk(nd)) && C.s.gt(s, Nd.ev(nd)) && C.s.lt(C.s.abs(s), C.MATE_BOUND()))
-      (tt.store(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), 2, s, mv), s)
-
-# record a searched quiet move (for the malus) unless it caused the cutoff
-def rec.quiet(m: Array<U32>, +ply: U32, +nq: U32, +mv: U32, go: Bool) -> Array<U32>:
-  match go:
-    case True{}:
-      m[U32.add(QUIETS(), U32.add(U32.shln(ply, 6n), U32.min(nq, 63)))] <- mv
-      m
-    case False{}:
-      m
-
-def sr.upd?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool) -> Array<U32> & U32:
-  match lp:
-    case Lp{alpha, best, bmv, i, legal, quiets, nq}:
-      +better = C.s.gt(s, best)
-      +raise = C.s.gt(s, alpha)
-      +cut = C.s.ge(s, Nd.beta(nd))
-      m = rec.quiet(m, Nd.ply(nd), nq, mv, quiet && Bool.not(cut))
-      sr.cut(pv.upd.if(m, Nd.ply(nd), mv, raise), nd,
-        Lp{C.sel(raise, s, alpha), C.sel(better, s, best), C.sel(better, mv, bmv), U32.add(i, 1),
-          U32.add(legal, 1), U32.add(quiets, C.b2u(quiet)), U32.add(nq, C.b2u(quiet && Bool.not(cut)))},
-        mv, s, quiet, cut)
-
-def sr.after.b?(r: Array<U32> & Bool, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool) ->
-  Array<U32> & U32:
-  match r:
-    case (m, False{}):
-      sr.upd(m, nd, lp, mv, s, quiet)
-    case (m, True{}):
-      (m, 0)
-
-def sr.after?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +raw) = r
-  sr.after.b(unmake.mem(m, np, mv), nd, lp, mv, C.s.neg(raw), quiet)
-
-def sr.re2.b?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
-              +raw: U32, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      sr.after(nd, lp, mv, np, quiet, (m, raw))
-    case True{}:
-      sr.after(nd, lp, mv, np, quiet,
-        search(m, np, sub0(Nd.depth(nd), 1), C.s.neg(Nd.beta(nd)), C.s.neg(Lp.alpha(lp)),
-          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
-
-# research at full depth / full window when a reduced or null-window
-# search beat alpha
-def sr.re2?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +raw) = r
-  +s = C.s.neg(raw)
-  sr.re2.b(m, nd, lp, mv, np, quiet, gc, raw,
-    Nd.pv(nd) && C.s.gt(s, Lp.alpha(lp)) && C.s.lt(s, Nd.beta(nd)))
-
-def sr.re1.b?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
-              +raw: U32, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      sr.re2(nd, lp, mv, np, quiet, gc, (m, raw))
-    case True{}:
-      +a = Lp.alpha(lp)
-      sr.re2(nd, lp, mv, np, quiet, gc,
-        search(m, np, sub0(Nd.depth(nd), 1), C.s.neg(U32.add(a, 1)), C.s.neg(a),
-          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
-
-def sr.re1?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool, +red: U32,
-            r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +raw) = r
-  sr.re1.b(m, nd, lp, mv, np, quiet, gc, raw,
-    U32.is_gt(red, 0) && C.s.gt(C.s.neg(raw), Lp.alpha(lp)))
-
-def sr.child?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
-              +red: U32, first: Bool) -> Array<U32> & U32:
-  match first:
-    case True{}:
-      sr.after(nd, lp, mv, np, quiet,
-        search(m, np, sub0(Nd.depth(nd), 1), C.s.neg(Nd.beta(nd)), C.s.neg(Lp.alpha(lp)),
-          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
-    case False{}:
-      +a = Lp.alpha(lp)
-      sr.re1(nd, lp, mv, np, quiet, gc, red,
-        search(m, np, sub0(sub0(Nd.depth(nd), 1), red), C.s.neg(U32.add(a, 1)), C.s.neg(a),
-          U32.add(Nd.ply(nd), 1), True{}, gc, Nd.o(nd)))
-
-# reduction for a late quiet move (0 when LMR does not apply). The ordering
-# key (history + continuation history; killers/countermove high) shifts it:
-# well-scoring quiets are reduced one ply less, badly scoring ones one more.
-# CAS level 3 adds a ply in very wide nodes (> 40 moves).
-def sr.red(+nd: Nd, +lp: Lp, +key: U32, +quiet: Bool, +gc: Bool) -> U32:
-  +d = Nd.depth(nd)
-  +k = U32.add(Lp.legal(lp), 1)
-  +ok = Opt.lmr(Nd.o(nd)) && quiet && Bool.not(gc) && Bool.not(Nd.chk(nd)) &&
-    U32.is_ge(d, 3) && U32.is_gt(k, 3)
-  +wide = C.b2u(U32.is_ge(Opt.cas(Nd.o(nd)), 3) && U32.is_gt(Nd.n(nd), 40) && U32.is_gt(k, 8))
-  +good = C.b2u(U32.is_ge(key, 13000))
-  +poor = C.b2u(U32.is_lt(key, 5000))
-  +r0 = U32.add(U32.add(sub0(sub0(lmr.r(d, k), C.b2u(Nd.pv(nd))), good), wide), poor)
-  C.sel(ok, U32.min(r0, sub0(d, 2)), 0)
-
-def sr.prune?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
-              prune: Bool) -> Array<U32> & U32:
-  match prune:
-    case True{}:
-      sr.loop(B.unmake(m, np, mv), nd, Lp.pruned(lp))
-    case False{}:
-      sr.child(m, nd, lp, mv, np, quiet, gc, sr.red(nd, lp, key, quiet, gc), U32.is_zero(Lp.legal(lp)))
-
-# late-move pruning threshold: more quiet moves are tried when improving
-def lmp.max(+d: U32, +imp: Bool) -> U32:
-  U32.div(U32.add(3, U32.mul(d, d)), C.sel(imp, 1, 2))
-
-def Nd.imp(+x: Nd) -> Bool:
-  match x:
-    case Nd{_, _, _, _, _, _, _, _, _, _, _, _, _, imp}:
-      imp
-
-def sr.gc?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
-  (m, +gc) = r
-  +quiet = U32.is_zero(B.P.cap(np)) && Bool.not(C.mv.is_promo(mv))
-  +d = Nd.depth(nd)
-  +base = Opt.prune(Nd.o(nd)) && Bool.not(Nd.pv(nd)) && Bool.not(Nd.chk(nd)) && Bool.not(gc) &&
-    U32.is_gt(Lp.legal(lp), 0) && U32.is_le(d, 3) &&
-    C.s.gt(Lp.best(lp), C.s.neg(C.MATE_BOUND()))
-  +futile = C.s.le(U32.add(Nd.ev(nd), U32.add(100, U32.mul(d, 120))), Lp.alpha(lp))
-  +late = U32.is_ge(Lp.quiets(lp), lmp.max(d, Nd.imp(nd)))
-  # history pruning: quiet moves with a clearly bad history score (the
-  # ordering key encodes history + continuation history, 9000 = neutral)
-  +hbad = U32.is_lt(key, U32.sub(9000, U32.mul(d, 1100)))
-  # SEE pruning: captures re-keyed as losing by the lazy SEE
-  +badcap = Bool.not(quiet) && U32.is_lt(key, 30)
-  sr.prune(m, nd, lp, mv, key, np, quiet, gc, base && ((quiet && (futile || late || hbad)) || badcap))
-
-def sr.legal?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
-  match r:
-    case (m, True{}):
-      sr.loop(B.unmake(m, np, mv), nd, Lp.skip(lp))
-    case (m, False{}):
-      sr.gc(nd, lp, mv, key, np, G.gchk(m, np, mv))
-
-# after making a move at this node: tell the child which move led to it
-def sr.made?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & B.Pos) -> Array<U32> & U32:
-  (m, +np) = r
-  m[U32.add(B.PLYAUX(), U32.shln(U32.add(Nd.ply(nd), 1), 2n))] <- mkey(B.P.mvd(np), C.mv.to(mv))
-  sr.legal(nd, lp, mv, key, np, G.illegal(m, np, mv, Nd.chk(nd)))
-
-# Lazy SEE: a capture by a more valuable piece is checked by SEE only when
-# the move picker reaches it; a losing one is re-keyed as a bad capture
-# and the picker runs again (most nodes cut off before this happens)
-def sr.pk.d?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, bad: Bool) -> Array<U32> & U32:
-  match bad:
-    case True{}:
-      m[U32.add(Nd.base(nd), Lp.i(lp))] <- U32.or(mv, U32.shln(U32.add(20, C.pc.type(vic)), 17n))
-      sr.loop(m, nd, lp)
-    case False{}:
-      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
-
-def sr.pk.s?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +sv) = r
-  sr.pk.d(m, nd, lp, mv, key, vic, C.s.lt(sv, 0))
-
-def sr.pk.c?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, need: Bool) -> Array<U32> & U32:
-  match need:
-    case True{}:
-      sr.pk.s(nd, lp, mv, key, vic, G.see(m, mv, B.P.side(Nd.p(nd))))
-    case False{}:
-      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
-
-def sr.pk.at?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +att) = r
-  sr.pk.c(m, nd, lp, mv, key, vic, U32.is_ne(vic, 0) &&
-    U32.is_gt(G.see.val(U32.to_nat(C.pc.type(att))), G.see.val(U32.to_nat(C.pc.type(vic)))))
-
-def sr.pk.v?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +vic) = r
-  sr.pk.at(nd, lp, mv, key, vic, m[C.mv.from(mv)])
-
-def sr.pk.a?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, capband: Bool) -> Array<U32> & U32:
-  match capband:
-    case True{}:
-      sr.pk.v(nd, lp, mv, key, m[C.mv.to(mv)])
-    case False{}:
-      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
-
-def sr.picked?(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +mvk) = r
-  +mv = C.mv.bare(mvk)
-  +key = U32.shrn(mvk, 17n)
-  sr.pk.a(m, nd, lp, mv, key, U32.is_ge(key, 20000) && U32.is_lt(key, 30000) && U32.is_lt(C.mv.flag(mv), 3))
-
-def sr.loop.go?(m: Array<U32>, +nd: Nd, +lp: Lp, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      sr.done(m, nd, lp)
-    case True{}:
-      sr.picked(nd, lp, pick(m, Nd.base(nd), Lp.i(lp), Nd.n(nd)))
-
-def sr.loop?(m: Array<U32>, +nd: Nd, +lp: Lp) -> Array<U32> & U32:
-  sr.loop.go(m, nd, lp, U32.is_lt(Lp.i(lp), Nd.n(nd)))
-
-def sr.imp?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
-            r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +imp) = r
-  m = ord(m, B.P.side(p), base, 0, n, ttm, k1, k2, pk, cm)
-  sr.loop(m, Nd{p, depth, beta, ply, pv, chk, ev, base, n, alpha, o, pk, cm, U32.is_ne(imp, 0)},
-    Lp{alpha, U32.add(C.s.neg(C.INF()), 0), 0, 0, 0, 0, 0})
-
-def sr.cm?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +cm) = r
-  sr.imp(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm,
-    m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))])
-
-def sr.pk?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +pk0) = r
-  +pk = C.sel(U32.is_zero(ply), PK_NONE(), U32.min(pk0, 768))
-  sr.cm(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, m[U32.add(CMOVE(), pk)])
-
-def sr.k2?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +k2) = r
-  sr.pk(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, m[U32.add(B.PLYAUX(), U32.shln(ply, 2n))])
-
-def sr.k1?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +k1) = r
-  sr.k2(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1,
-    m[U32.add(U32.add(B.KILLERS(), U32.shln(ply, 1n)), 1)])
-
-# CAS level 3 (in-tree allocation): a node with at most 3 pseudo-legal
-# moves is a forced line (cheap to resolve, often decisive): +1 ply
-def sr.gen?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +n) = r
-  +ext = C.b2u(U32.is_ge(Opt.cas(o), 3) && U32.is_le(n, 3) && U32.is_lt(ply, 40))
-  sr.k1(p, U32.add(depth, ext), alpha, beta, ply, chk, ev, pv, ttm, o, base, n,
-    m[U32.add(B.KILLERS(), U32.shln(ply, 1n))])
-
-# internal iterative reduction: without a TT move a deep node is likely
-# mis-ordered, so it is searched one ply shallower
-def sr.moves?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
-              +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
-  +base = ply_moves(ply)
-  +d2 = C.sel(U32.is_zero(ttm) && U32.is_ge(depth, 4), U32.sub(depth, 1), depth)
-  sr.gen(p, d2, alpha, beta, ply, chk, ev, pv, ttm, o, base, G.gen(m, p, base, 0))
-
 # null move: the side to move passes; if a reduced search still fails
 # high, so would a real move (except in zugzwang)
 def sr.nm.c?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
@@ -1287,13 +1395,15 @@ def sr.nm.b?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: B
   +s = C.s.neg(raw)
   sr.nm.c(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, s, C.s.ge(s, beta))
 
-def fill.go?(m: Array<U32>, +i: U32, +end: U32, +v: U32, go: Bool) -> Array<U32>:
-  match go:
-    case False{}:
-      m
-    case True{}:
-      m[i] <- v
-      fill(m, U32.add(i, 1), end, v)
+# null move: the child has no previous-move context
+def sr.nm.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & B.Pos) -> Array<U32> & U32:
+  (m, +np) = r
+  +red = U32.add(3, U32.div(depth, 6))
+  m[U32.add(B.PLYAUX(), U32.shln(U32.add(ply, 1), 2n))] <- PK_NONE()
+  sr.nm.b(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
+    search(m, np, sub0(depth, U32.add(red, 1)), C.s.neg(beta), C.s.neg(U32.sub(beta, 1)),
+      U32.add(ply, 1), False{}, False{}, o))
 
 # Table maintenance
 # -----------------
@@ -1301,10 +1411,13 @@ def fill.go?(m: Array<U32>, +i: U32, +end: U32, +v: U32, go: Bool) -> Array<U32>
 def fill?(m: Array<U32>, +i: U32, +end: U32, +v: U32) -> Array<U32>:
   fill.go(m, i, end, v, U32.is_lt(i, end))
 
-def halve.b?(+i: U32, +end: U32, r: Array<U32> & U32) -> Array<U32>:
-  (m, +v) = r
-  m[i] <- C.s.shr(v, 1n)
-  halve(m, U32.add(i, 1), end)
+def fill.go?(m: Array<U32>, +i: U32, +end: U32, +v: U32, go: Bool) -> Array<U32>:
+  match go:
+    case False{}:
+      m
+    case True{}:
+      m[i] <- v
+      fill(m, U32.add(i, 1), end, v)
 
 def halve.go?(m: Array<U32>, +i: U32, +end: U32, go: Bool) -> Array<U32>:
   match go:
@@ -1315,6 +1428,11 @@ def halve.go?(m: Array<U32>, +i: U32, +end: U32, go: Bool) -> Array<U32>:
 
 def halve?(m: Array<U32>, +i: U32, +end: U32) -> Array<U32>:
   halve.go(m, i, end, U32.is_lt(i, end))
+
+def halve.b?(+i: U32, +end: U32, r: Array<U32> & U32) -> Array<U32>:
+  (m, +v) = r
+  m[i] <- C.s.shr(v, 1n)
+  halve(m, U32.add(i, 1), end)
 
 # before a search: new TT generation, age the histories, clear killers
 def prep.b(r: Array<U32> & U32) -> Array<U32>:
@@ -1351,5 +1469,5 @@ def Opt.ss(+o: Opt) -> U32:
 
 def Nd.cm(+x: Nd) -> U32:
   match x:
-    case Nd{_, _, _, _, _, _, _, _, _, _, _, _, cm, _}:
+    case Nd{_, _, _, _, _, _, _, _, _, _, _, _, cm, _, _}:
       cm
