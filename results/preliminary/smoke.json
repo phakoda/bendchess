@@ -1,0 +1,27 @@
+{
+ "games": 8,
+ "wins": 8,
+ "draws": 0,
+ "losses": 0,
+ "score": 1.0,
+ "elo": 2399.999826281142,
+ "elo_lo": 2399.999826281142,
+ "elo_hi": 2399.999826281142,
+ "preliminary": true,
+ "a": "bend",
+ "b": "sf:elo=1500",
+ "limits": {
+  "nodes": 0,
+  "nodes2": 0,
+  "movetime": 0,
+  "movetime2": 0,
+  "tc": "10+0.1"
+ },
+ "a_avg_depth": 9.160142348754448,
+ "a_avg_nodes": 130675.8896797153,
+ "a_avg_time": 0.33354180393694133,
+ "wall_seconds": 54.01586031913757,
+ "terminations": {
+  "checkmate": 8
+ }
+}
