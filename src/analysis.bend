@@ -61,7 +61,7 @@ def cnt.go?(m: Array<U32>, +lo: U32, +hi: U32, nzlo: Bool, nzhi: Bool) -> Array<
 
 def counts.o(m: Array<U32>, o: B.Occ) -> Array<U32>:
   match o:
-    case B.Occ{w0, w1, b0, b1}:
+    case B.Occ{w0, w1, b0, b1, _, _, _, _}:
       cnt(m, U32.or(w0, b0), U32.or(w1, b1))
 
 def counts(m: Array<U32>, +p: B.Pos) -> Array<U32>:

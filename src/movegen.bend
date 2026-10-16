@@ -278,7 +278,7 @@ def fen.parse(m: Array<U32>, s: String) -> Array<U32> & B.Pos:
   +a0 = {B.Acc{(U32.and(C.z.side.lo(), C.bmask(U32.is_eq(side, 1))) .^. C.z.castle.lo(castle) .^. C.z.ep.lo(ep) : U32),
            (U32.and(C.z.side.hi(), C.bmask(U32.is_eq(side, 1))) .^. C.z.castle.hi(castle) .^. C.z.ep.hi(ep) : U32),
            0, 0, 0} : B.Acc}
-  B.fen.pos(side, castle, ep, half, scan(m, 0, B.Scan{a0, C.NO_SQ(), C.NO_SQ(), B.Occ{0, 0, 0, 0}}, True{}))
+  B.fen.pos(side, castle, ep, half, scan(m, 0, B.Scan{a0, C.NO_SQ(), C.NO_SQ(), B.Occ{0, 0, 0, 0, 0, 0, 0, 0}}, True{}))
 
 def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
   fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))

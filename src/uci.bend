@@ -927,7 +927,7 @@ def uci.d.b?(+p: B.Pos, +o: S.Opt, f: File, buf: String, fen: String, r: Array<U
     IO.print("fen " ++ fen)
     IO.print("eval " ++ C.s.show(ev) ++ " (static, side to move, cp; PeSTO part " ++ C.s.show(E.pesto(p)) ++ ")")
     IO.print("state hash " ++ U32.show(B.P.hhi(p)) ++ ":" ++ U32.show(B.P.hlo(p)) ++ " mg " ++ C.s.show(B.P.mg(p)) ++
-      " eg " ++ C.s.show(B.P.eg(p)) ++ " phase " ++ U32.show(B.P.ph(p)) ++ " pieces " ++ U32.show(B.npieces(p)) ++
+      " eg " ++ C.s.show(B.P.eg(p)) ++ " phase " ++ U32.show(B.P.ph(p)) ++ " pieces " ++ U32.show(B.npieces(p)) ++ " pawns " ++ U32.show(B.pawnsig(p)) ++
       " kings " ++ U32.show(B.P.wk(p)) ++ "," ++ U32.show(B.P.bk(p)))
     uci.loop(m, p, o, buf, f)
 
