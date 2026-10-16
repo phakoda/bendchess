@@ -27,6 +27,7 @@ import Base
 import ./core.bend as C
 import ./board.bend as B
 import ./weights.bend as W
+import ./tables.bend as T
 
 def TEMPO() -> U32:
   10
@@ -202,6 +203,10 @@ def pawns(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U3
 def zone256(+t: U32, +ek: U32) -> U32:
   C.sel(U32.is_ne(U32.and(B.dinfo(t, ek), 32), 0), 256, 0)
 
+def mob.walk?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32) ->
+  Array<U32> & U32:
+  mob.walk.c(t, d, len, c, ek, acc, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
 # Mobility walks
 # --------------
 # acc packs reachable squares (low byte) and king-zone hits (<< 8).
@@ -221,9 +226,9 @@ def mob.walk.c?(+t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32, ok: B
   (m, +v) = r
   mob.walk.d(m, t, d, len, c, ek, acc, v, ok, U32.is_zero(v))
 
-def mob.walk?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32) ->
+def mob.dirs?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32) ->
   Array<U32> & U32:
-  mob.walk.c(t, d, len, c, ek, acc, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+  mob.dirs.go(m, sq, c, ek, di, de, len, acc, U32.is_lt(di, de))
 
 def mob.dirs.k?(+sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, r: Array<U32> & U32) ->
   Array<U32> & U32:
@@ -238,10 +243,6 @@ def mob.dirs.go?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32,
     case True{}:
       +d = B.dir(U32.to_nat(di))
       mob.dirs.k(sq, c, ek, di, de, len, mob.walk(m, U32.add(sq, d), d, len, c, ek, acc))
-
-def mob.dirs?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32) ->
-  Array<U32> & U32:
-  mob.dirs.go(m, sq, c, ek, di, de, len, acc, U32.is_lt(di, de))
 
 # rook on an open / semi-open file and on the 7th rank; fl holds the white
 # pawn files (low byte) and the black pawn files (next byte)
@@ -292,11 +293,28 @@ def pb.type.light(m: Array<U32>, +sq: U32, +c: U32, ev: Ev, +ws: U32, +fl: U32, 
     case _:
       (m, ev)
 
-def pb.type.full?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, t: Nat) ->
+# knight mobility from the attack tables: squares not occupied by own
+# pieces (low byte) and attacked king-zone squares (<< 8), as mob.dirs
+def knight.mob.o(+sq: U32, +c: U32, +ek: U32, o: B.Occ) -> U32:
+  match o:
+    case B.Occ{w0, w1, b0, b1, _, _, _, _, _}:
+      +i = U32.to_nat(C.sq.to64(sq))
+      +k = U32.to_nat(C.sq.to64(ek))
+      +nl = T.natt_lo(i)
+      +nh = T.natt_hi(i)
+      +w = U32.is_zero(c)
+      +mob = pc64(U32.and(nl, U32.not(C.sel(w, w0, b0))), U32.and(nh, U32.not(C.sel(w, w1, b1))))
+      +zone = pc64(U32.and(nl, T.katt_lo(k)), U32.and(nh, T.katt_hi(k)))
+      U32.add(mob, U32.shln(zone, 8n))
+
+def knight.mob(+sq: U32, +c: U32, +ek: U32, +o: B.Occ) -> U32:
+  knight.mob.o(sq, c, ek, o)
+
+def pb.type.full?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, +o: B.Occ, t: Nat) ->
   Array<U32> & Ev:
   match t:
     case 2n:
-      mob.fin(ev, ws, c, 2, mob.dirs(m, sq, c, ek, 8, 16, 1, 0))
+      mob.fin(ev, ws, c, 2, (m, knight.mob(sq, c, ek, o)))
     case 3n:
       mob.fin(ev.bis(ev, c), ws, c, 3, mob.dirs(m, sq, c, ek, 4, 8, 8, 0))
     case 4n:
@@ -306,44 +324,45 @@ def pb.type.full?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, 
     case _:
       (m, ev)
 
-def pb.type.l?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, t: Nat, lt: Bool) ->
-  Array<U32> & Ev:
+def pb.type.l?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, +o: B.Occ, t: Nat,
+               lt: Bool) -> Array<U32> & Ev:
   match lt:
     case True{}:
       pb.type.light(m, sq, c, ev, ws, fl, t)
     case False{}:
-      pb.type.full(m, sq, c, ek, ev, ws, fl, t)
+      pb.type.full(m, sq, c, ek, ev, ws, fl, o, t)
 
-def pb.type?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, t: Nat) ->
+def pb.type?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, +o: B.Occ, t: Nat) ->
   Array<U32> & Ev:
-  pb.type.l(m, sq, c, ek, ev, ws, fl, t, light(ws))
+  pb.type.l(m, sq, c, ek, ev, ws, fl, o, t, light(ws))
 
-def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32,
+def pb.n?(+lo: U32, +hi: U32, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ, r: Array<U32> & Ev) ->
+  Array<U32> & Ev:
+  (m, ev) = r
+  pb(m, lo, hi, ev, ws, fl, wk, bk, o)
+
+def pb.k?(+lo: U32, +hi: U32, +sq: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ,
+          r: Array<U32> & U32) -> Array<U32> & Ev:
+  (m, +v) = r
+  +c = C.pc.color(v)
+  pb.n(lo, hi, ws, fl, wk, bk, o, pb.type(m, sq, c, C.sel(U32.is_zero(c), bk, wk), ev, ws, fl, o,
+    U32.to_nat(C.pc.type(v))))
+
+def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ,
            nzlo: Bool, nzhi: Bool) -> Array<U32> & Ev:
   match nzlo nzhi:
     case True{} _:
       +sq = C.sq.from64(B.ctz(lo))
-      pb.k(U32.and(lo, U32.sub(lo, 1)), hi, sq, ev, ws, fl, wk, bk, m[sq])
+      pb.k(U32.and(lo, U32.sub(lo, 1)), hi, sq, ev, ws, fl, wk, bk, o, m[sq])
     case False{} True{}:
       +sq = C.sq.from64(U32.add(B.ctz(hi), 32))
-      pb.k(lo, U32.and(hi, U32.sub(hi, 1)), sq, ev, ws, fl, wk, bk, m[sq])
+      pb.k(lo, U32.and(hi, U32.sub(hi, 1)), sq, ev, ws, fl, wk, bk, o, m[sq])
     case False{} False{}:
       (m, ev)
 
-def pb?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32) ->
+def pb?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ) ->
   Array<U32> & Ev:
-  pb.go(m, lo, hi, ev, ws, fl, wk, bk, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
-
-def pb.n?(+lo: U32, +hi: U32, +ws: U32, +fl: U32, +wk: U32, +bk: U32, r: Array<U32> & Ev) -> Array<U32> & Ev:
-  (m, ev) = r
-  pb(m, lo, hi, ev, ws, fl, wk, bk)
-
-def pb.k?(+lo: U32, +hi: U32, +sq: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32,
-          r: Array<U32> & U32) -> Array<U32> & Ev:
-  (m, +v) = r
-  +c = C.pc.color(v)
-  pb.n(lo, hi, ws, fl, wk, bk, pb.type(m, sq, c, C.sel(U32.is_zero(c), bk, wk), ev, ws, fl,
-    U32.to_nat(C.pc.type(v))))
+  pb.go(m, lo, hi, ev, ws, fl, wk, bk, o, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
 
 # Final assembly
 # --------------
@@ -372,7 +391,7 @@ def eval.occ(m: Array<U32>, +p: B.Pos, +ws: U32, o: B.Occ) -> Array<U32> & U32:
       +hi = U32.and(U32.or(w1, b1), U32.not(U32.or(wp1, bp1)))
       +fl = U32.or(files(wp0, wp1), U32.shln(files(bp0, bp1), 8n))
       ev = pawns(Ev{0, 0, 0, 0, 0, 0, 0, 0}, ws, p, wp0, wp1, bp0, bp1)
-      eval.fin(p, ws, pb(m, lo, hi, ev, ws, fl, B.P.wk(p), B.P.bk(p)))
+      eval.fin(p, ws, pb(m, lo, hi, ev, ws, fl, B.P.wk(p), B.P.bk(p), B.P.occ(p)))
 
 # white-relative evaluation with weight set ws (0 = the engine's weights)
 def eval.white(m: Array<U32>, +p: B.Pos, +ws: U32) -> Array<U32> & U32:

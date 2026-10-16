@@ -213,6 +213,26 @@ def lmr_table() -> str:
     return nat_table("lmr_ln", [round(math.log(x) / 1.5 * 256) if x > 0 else 0 for x in range(64)])
 
 
+def leaper_tables() -> str:
+    """Knight attacks and king neighbourhoods as 64-bit boards split in
+    lo / hi 32-bit halves, by square64 (a1 = 0)."""
+    def boards(steps):
+        lo, hi = [], []
+        for sq in range(64):
+            f, r = sq % 8, sq // 8
+            b = 0
+            for df, dr in steps:
+                if 0 <= f + df < 8 and 0 <= r + dr < 8:
+                    b |= 1 << ((r + dr) * 8 + f + df)
+            lo.append(b & 0xFFFFFFFF)
+            hi.append(b >> 32)
+        return lo, hi
+    nl, nh = boards([(1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1), (-2, 1), (-1, 2)])
+    kl, kh = boards([(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)])
+    return "\n".join([nat_table("natt_lo", nl), nat_table("natt_hi", nh),
+                      nat_table("katt_lo", kl), nat_table("katt_hi", kh)])
+
+
 def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     dst = os.path.join(here, "..", "src", "tables.bend")
@@ -231,6 +251,7 @@ def main() -> None:
         f.write(debruijn_table() + "\n")
         f.write(zobrist_tables() + "\n")
         f.write(lmr_table() + "\n")
+        f.write(leaper_tables() + "\n")
     print("wrote", os.path.normpath(dst))
 
 

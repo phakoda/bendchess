@@ -5085,3 +5085,535 @@ def lmr_ln(n: Nat) -> U32:
     case _:
       0
 
+def natt_lo(n: Nat) -> U32:
+  match n:
+    case 0n:
+      132096
+    case 1n:
+      329728
+    case 2n:
+      659712
+    case 3n:
+      1319424
+    case 4n:
+      2638848
+    case 5n:
+      5277696
+    case 6n:
+      10489856
+    case 7n:
+      4202496
+    case 8n:
+      33816580
+    case 9n:
+      84410376
+    case 10n:
+      168886289
+    case 11n:
+      337772578
+    case 12n:
+      675545156
+    case 13n:
+      1351090312
+    case 14n:
+      2685403152
+    case 15n:
+      1075839008
+    case 16n:
+      67109890
+    case 17n:
+      134219781
+    case 18n:
+      285217034
+    case 19n:
+      570434068
+    case 20n:
+      1140868136
+    case 21n:
+      2281736272
+    case 22n:
+      268439712
+    case 23n:
+      536879168
+    case 24n:
+      262656
+    case 25n:
+      525568
+    case 26n:
+      1116672
+    case 27n:
+      2233344
+    case 28n:
+      4466688
+    case 29n:
+      8933376
+    case 30n:
+      1089536
+    case 31n:
+      2113536
+    case 32n:
+      67239936
+    case 33n:
+      134545408
+    case 34n:
+      285868032
+    case 35n:
+      571736064
+    case 36n:
+      1143472128
+    case 37n:
+      2286944256
+    case 38n:
+      278921216
+    case 39n:
+      541065216
+    case 40n:
+      33554432
+    case 41n:
+      83886080
+    case 42n:
+      167772160
+    case 43n:
+      335544320
+    case 44n:
+      671088640
+    case 45n:
+      1342177280
+    case 46n:
+      2684354560
+    case 47n:
+      1073741824
+    case 48n:
+      0
+    case 49n:
+      0
+    case 50n:
+      0
+    case 51n:
+      0
+    case 52n:
+      0
+    case 53n:
+      0
+    case 54n:
+      0
+    case 55n:
+      0
+    case 56n:
+      0
+    case 57n:
+      0
+    case 58n:
+      0
+    case 59n:
+      0
+    case 60n:
+      0
+    case 61n:
+      0
+    case 62n:
+      0
+    case 63n:
+      0
+    case _:
+      0
+
+def natt_hi(n: Nat) -> U32:
+  match n:
+    case 0n:
+      0
+    case 1n:
+      0
+    case 2n:
+      0
+    case 3n:
+      0
+    case 4n:
+      0
+    case 5n:
+      0
+    case 6n:
+      0
+    case 7n:
+      0
+    case 8n:
+      0
+    case 9n:
+      0
+    case 10n:
+      0
+    case 11n:
+      0
+    case 12n:
+      0
+    case 13n:
+      0
+    case 14n:
+      0
+    case 15n:
+      0
+    case 16n:
+      2
+    case 17n:
+      5
+    case 18n:
+      10
+    case 19n:
+      20
+    case 20n:
+      40
+    case 21n:
+      80
+    case 22n:
+      160
+    case 23n:
+      64
+    case 24n:
+      516
+    case 25n:
+      1288
+    case 26n:
+      2577
+    case 27n:
+      5154
+    case 28n:
+      10308
+    case 29n:
+      20616
+    case 30n:
+      40976
+    case 31n:
+      16416
+    case 32n:
+      132096
+    case 33n:
+      329728
+    case 34n:
+      659712
+    case 35n:
+      1319424
+    case 36n:
+      2638848
+    case 37n:
+      5277696
+    case 38n:
+      10489856
+    case 39n:
+      4202496
+    case 40n:
+      33816580
+    case 41n:
+      84410376
+    case 42n:
+      168886289
+    case 43n:
+      337772578
+    case 44n:
+      675545156
+    case 45n:
+      1351090312
+    case 46n:
+      2685403152
+    case 47n:
+      1075839008
+    case 48n:
+      67109890
+    case 49n:
+      134219781
+    case 50n:
+      285217034
+    case 51n:
+      570434068
+    case 52n:
+      1140868136
+    case 53n:
+      2281736272
+    case 54n:
+      268439712
+    case 55n:
+      536879168
+    case 56n:
+      262656
+    case 57n:
+      525568
+    case 58n:
+      1116672
+    case 59n:
+      2233344
+    case 60n:
+      4466688
+    case 61n:
+      8933376
+    case 62n:
+      1089536
+    case 63n:
+      2113536
+    case _:
+      0
+
+def katt_lo(n: Nat) -> U32:
+  match n:
+    case 0n:
+      770
+    case 1n:
+      1797
+    case 2n:
+      3594
+    case 3n:
+      7188
+    case 4n:
+      14376
+    case 5n:
+      28752
+    case 6n:
+      57504
+    case 7n:
+      49216
+    case 8n:
+      197123
+    case 9n:
+      460039
+    case 10n:
+      920078
+    case 11n:
+      1840156
+    case 12n:
+      3680312
+    case 13n:
+      7360624
+    case 14n:
+      14721248
+    case 15n:
+      12599488
+    case 16n:
+      50463488
+    case 17n:
+      117769984
+    case 18n:
+      235539968
+    case 19n:
+      471079936
+    case 20n:
+      942159872
+    case 21n:
+      1884319744
+    case 22n:
+      3768639488
+    case 23n:
+      3225468928
+    case 24n:
+      33751040
+    case 25n:
+      84344832
+    case 26n:
+      168689664
+    case 27n:
+      337379328
+    case 28n:
+      674758656
+    case 29n:
+      1349517312
+    case 30n:
+      2699034624
+    case 31n:
+      1086324736
+    case 32n:
+      50331648
+    case 33n:
+      117440512
+    case 34n:
+      234881024
+    case 35n:
+      469762048
+    case 36n:
+      939524096
+    case 37n:
+      1879048192
+    case 38n:
+      3758096384
+    case 39n:
+      3221225472
+    case 40n:
+      0
+    case 41n:
+      0
+    case 42n:
+      0
+    case 43n:
+      0
+    case 44n:
+      0
+    case 45n:
+      0
+    case 46n:
+      0
+    case 47n:
+      0
+    case 48n:
+      0
+    case 49n:
+      0
+    case 50n:
+      0
+    case 51n:
+      0
+    case 52n:
+      0
+    case 53n:
+      0
+    case 54n:
+      0
+    case 55n:
+      0
+    case 56n:
+      0
+    case 57n:
+      0
+    case 58n:
+      0
+    case 59n:
+      0
+    case 60n:
+      0
+    case 61n:
+      0
+    case 62n:
+      0
+    case 63n:
+      0
+    case _:
+      0
+
+def katt_hi(n: Nat) -> U32:
+  match n:
+    case 0n:
+      0
+    case 1n:
+      0
+    case 2n:
+      0
+    case 3n:
+      0
+    case 4n:
+      0
+    case 5n:
+      0
+    case 6n:
+      0
+    case 7n:
+      0
+    case 8n:
+      0
+    case 9n:
+      0
+    case 10n:
+      0
+    case 11n:
+      0
+    case 12n:
+      0
+    case 13n:
+      0
+    case 14n:
+      0
+    case 15n:
+      0
+    case 16n:
+      0
+    case 17n:
+      0
+    case 18n:
+      0
+    case 19n:
+      0
+    case 20n:
+      0
+    case 21n:
+      0
+    case 22n:
+      0
+    case 23n:
+      0
+    case 24n:
+      3
+    case 25n:
+      7
+    case 26n:
+      14
+    case 27n:
+      28
+    case 28n:
+      56
+    case 29n:
+      112
+    case 30n:
+      224
+    case 31n:
+      192
+    case 32n:
+      770
+    case 33n:
+      1797
+    case 34n:
+      3594
+    case 35n:
+      7188
+    case 36n:
+      14376
+    case 37n:
+      28752
+    case 38n:
+      57504
+    case 39n:
+      49216
+    case 40n:
+      197123
+    case 41n:
+      460039
+    case 42n:
+      920078
+    case 43n:
+      1840156
+    case 44n:
+      3680312
+    case 45n:
+      7360624
+    case 46n:
+      14721248
+    case 47n:
+      12599488
+    case 48n:
+      50463488
+    case 49n:
+      117769984
+    case 50n:
+      235539968
+    case 51n:
+      471079936
+    case 52n:
+      942159872
+    case 53n:
+      1884319744
+    case 54n:
+      3768639488
+    case 55n:
+      3225468928
+    case 56n:
+      33751040
+    case 57n:
+      84344832
+    case 58n:
+      168689664
+    case 59n:
+      337379328
+    case 60n:
+      674758656
+    case 61n:
+      1349517312
+    case 62n:
+      2699034624
+    case 63n:
+      1086324736
+    case _:
+      0
+
