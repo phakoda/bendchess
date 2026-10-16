@@ -30,10 +30,11 @@ def main():
     ap.add_argument("--elo", type=int, default=2850)
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--engine", default="bend")
+    ap.add_argument("--tag", default="", help="record name (default magnus_proxy_<elo>)")
     args = ap.parse_args()
     cmd = [sys.executable, os.path.join(ROOT, "tools", "match.py"), args.engine, f"sf:elo={args.elo}",
            "--games", str(args.games), "--tc", args.tc, "--concurrency", str(args.concurrency),
-           "--out", os.path.join(ROOT, "results", "matches"), "--tag", f"magnus_proxy_{args.elo}",
+           "--out", os.path.join(ROOT, "results", "matches"), "--tag", args.tag or f"magnus_proxy_{args.elo}",
            "--event", f"BendChess vs Stockfish 16 UCI_Elo {args.elo} (Magnus-strength proxy)"]
     subprocess.run(cmd, check=True)
 
