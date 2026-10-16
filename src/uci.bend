@@ -560,7 +560,7 @@ def cmd.code(+c: String) -> U32:
   C.sel(str.eq(c, "uci"), 1, C.sel(str.eq(c, "isready"), 2, C.sel(str.eq(c, "position"), 3,
   C.sel(str.eq(c, "go"), 4, C.sel(str.eq(c, "quit"), 5, C.sel(str.eq(c, "setoption"), 6,
   C.sel(str.eq(c, "ucinewgame"), 7, C.sel(str.eq(c, "d"), 8, C.sel(str.eq(c, "features"), 9,
-  C.sel(str.eq(c, "eval"), 8, C.sel(str.eq(c, "analyze"), 10, 0)))))))))))
+  C.sel(str.eq(c, "eval"), 8, C.sel(str.eq(c, "analyze"), 10, C.sel(str.eq(c, "see"), 11, 0))))))))))))
 
 # Strings kept in engine memory (UCI string options): length, then chars
 def TBPATH() -> U32:
@@ -985,6 +985,8 @@ def uci.cmd.b?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, rest: 
       uci.feat(p, o, f, buf, feats(m, p, 1, ""))
     case 10n:
       uci.an(p, o, f, buf, rest, m)
+    case 11n:
+      uci.see(p, o, f, buf, G.find_move(m, p, B.str.nth(rest, 0n, ""), 0))
     case _:
       uci.loop(m, p, o, buf, f)
 
@@ -1095,3 +1097,13 @@ def uci.main.b(args: List<&1, String>) -> IO(Unit):
 
 def uci.main() -> IO(Unit):
   IO.bind(List<String>, Unit, IO.args(), uci.main.b)
+
+def uci.see.b?(+p: B.Pos, +o: S.Opt, f: File, buf: String, +mv: U32, r: Array<U32> & U32) -> IO(Unit):
+  (m, +v) = r
+  do IO<Unit>:
+    IO.print("see " ++ B.mv.uci(mv) ++ " " ++ C.s.show(v))
+    uci.loop(m, p, o, buf, f)
+
+def uci.see?(+p: B.Pos, +o: S.Opt, f: File, buf: String, r: Array<U32> & U32) -> IO(Unit):
+  (m, +mv) = r
+  uci.see.b(p, o, f, buf, mv, G.see(m, mv, B.P.side(p)))

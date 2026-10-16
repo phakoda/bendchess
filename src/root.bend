@@ -365,6 +365,7 @@ def it.gc?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +v: 
 def it.mk?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +v: U32, r: Array<U32> & B.Pos) ->
   Array<U32> & U32:
   (m, +np) = r
+  m[U32.add(B.PLYAUX(), 4)] <- S.mkey(B.P.mvd(np), C.mv.to(mv))
   it.gc(rt, i, alpha, bestsc, mv, b0, v, np, G.gchk(m, np, mv))
 
 def it.f4?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +v: U32, r: Array<U32> & U32) ->
