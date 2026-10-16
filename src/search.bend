@@ -1101,12 +1101,17 @@ def sr.gc?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bo
   (m, +gc) = r
   +quiet = U32.is_zero(B.P.cap(np)) && Bool.not(C.mv.is_promo(mv))
   +d = Nd.depth(nd)
-  +ok = Opt.prune(Nd.o(nd)) && Bool.not(Nd.pv(nd)) && Bool.not(Nd.chk(nd)) && Bool.not(gc) && quiet &&
+  +base = Opt.prune(Nd.o(nd)) && Bool.not(Nd.pv(nd)) && Bool.not(Nd.chk(nd)) && Bool.not(gc) &&
     U32.is_gt(Lp.legal(lp), 0) && U32.is_le(d, 3) &&
     C.s.gt(Lp.best(lp), C.s.neg(C.MATE_BOUND()))
   +futile = C.s.le(U32.add(Nd.ev(nd), U32.add(100, U32.mul(d, 120))), Lp.alpha(lp))
   +late = U32.is_ge(Lp.quiets(lp), lmp.max(d, Nd.imp(nd)))
-  sr.prune(m, nd, lp, mv, key, np, quiet, gc, ok && (futile || late))
+  # history pruning: quiet moves with a clearly bad history score (the
+  # ordering key encodes history + continuation history, 9000 = neutral)
+  +hbad = U32.is_lt(key, U32.sub(9000, U32.mul(d, 1100)))
+  # SEE pruning: captures re-keyed as losing by the lazy SEE
+  +badcap = Bool.not(quiet) && U32.is_lt(key, 30)
+  sr.prune(m, nd, lp, mv, key, np, quiet, gc, base && ((quiet && (futile || late || hbad)) || badcap))
 
 def sr.legal?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
   match r:
