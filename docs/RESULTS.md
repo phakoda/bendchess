@@ -148,22 +148,102 @@ FIDE rating). Caveats: a strength-limited Stockfish is not Carlsen (it
 neither plays his openings nor errs like a human), and UCI_Elo is
 calibrated against engine rating lists, not FIDE.
 
-## 9. Known limitations
+## 9. Phase 2: the five listed improvements and further fundamentals
 
-* Strength: roughly 140 Elo below a Stockfish set to UCI_Elo 2850; easily
-  beatable by full-strength engines. Not unbeatable, not "solved".
-* Single-threaded. Bend's fork-join parallelism needs independent
-  subtrees; sharing a transposition table would need Bend's experimental
-  `@unsafe` atomic arrays. Root-split parallel search was not attempted.
+Every change below was A/B-tested (400 games, 200 book openings x 2
+colours, all games distinct; 5 s + 0.05 s per game at wall clock with 4
+games on 4 cores, or a node clock where stated). Full table:
+`results/ab_summary.md`; game records: `results/ab/*.pgn`. "Same tree"
+means the change was verified to leave node counts at fixed depth
+unchanged (pure speedups), and value-identical changes were checked
+against the previous implementation (feature vectors on 1,500 random
+positions, SEE on 6,000 captures, perft).
+
+### 9.1 What was built
+
+| # | Improvement | Implementation |
+|---|---|---|
+| 1 | Faster feature evaluation | pawn bitboards + pawn-structure Zobrist key kept incrementally in the position; passed/isolated/doubled pawns, shield and rook files by bit arithmetic (fills, spans, file masks); knight mobility from attack tables + popcount; bishop/rook/queen mobility from ray tables (first blocker = lowest/highest set bit); the per-piece pass skips pawns. Identical features. |
+| 2 | SEE, TT replacement, history | SEE on occupancy bitboards (x-rays by clearing bits, no board edits), lazy SEE in the move picker, SEE pruning in quiescence and at depth <= 3; aged TT replacement; signed history with gravity and malus; countermoves; continuation history; history-adjusted LMR and history pruning |
+| 3 | Parallel search | root split with Bend fork-join calls, worker memories with their own TT, moves dealt by hash (`Threads` 2/4) |
+| 4 | More data, learned cost model | 35,830 Stockfish-labelled positions from 3,000 self-play games (5x phase 1); refit evaluation weights; a learned iteration-cost model (`tools/costmodel.py`) used by `TimePolicy 3` |
+| 5 | Budget policy v2, longer TC | `TimePolicy 2`: best-move node effort (share of root nodes) + graded score drops; `TimePolicy 3`: + learned cost model; CAS retested at a 3x larger budget |
+| + | Further fundamentals | quiescence TT probe; IIR; improving heuristic; singular extensions with multi-cut; pawn-structure correction history; Zobrist and LMR from lookup tables; loop-free legality / gives-check fast paths (ray tables); make-move with the capture/castling updates behind one branch; options and node record packed into fewer words; practical-difficulty mode (Module 8) |
+
+### 9.2 Measured effects
+
+| Test | Result (Elo, 95%) | Notes |
+|---|---|---|
+| SEE (eager, in ordering + qsearch) vs phase-1 engine, equal time | **-30** [-59, -3] | SEE in ordering cost 32% of the node rate; made lazy afterwards (-24% instructions per node) |
+| history malus + countermoves + continuation history + history LMR | **+49** [+21, +78] | |
+| TT replacement + IIR + improving | +11 [-19, +41] | |
+| lazy-SEE build vs phase-1 engine, equal time | +10 [-18, +37] | node rate 0.65x |
+| **all phase-2 search changes vs phase-1 engine, equal nodes** (30k/move) | **+114** [+85, +145] | the search is much more efficient per node |
+| all phase-2 changes vs phase-1 engine, equal time (PeSTO eval) | +9 [-18, +36] | node rate 0.63x: per-node cost eats most of the gain at this very short TC (about 0.1 s / 44k nodes per move) |
+| full eval vs PeSTO, equal time, before the bitboard speedups | **-34** [-64, -5] | phase 1: -73 to -93 |
+| full eval with refit weights vs PeSTO, equal time, after the speedups | +20 [-9, +50] | now the default (`EvalMode=0`) |
+| refit vs hand weights, equal nodes | +3 [-26, +32] | held-out MSE 0.02565 vs 0.02639 (PeSTO only 0.02777): better fit, no measurable Elo |
+| `TimePolicy 3` vs 1, equal node budgets | +18 [-8, +45] | uses 3% fewer nodes; now the default |
+| practical mode (`Practical`) | not measured for Elo | off by default; tested for legality / not changing decisive choices |
+
+Learned cost model (6,146 iterations from 800 positions, depth 12,
+position-grouped split): predicting log2 of the next iteration's cost, the
+engine's phase-1 rule ("same growth as the last iteration") has test MAE
+**1.12 bits** - worse than a constant (0.81); the learned linear model
+gets **0.72 bits**. Growth mean-reverts (coefficient -0.43 on the last
+growth) and is smaller after a best-move change.
+
+Parallel search, time to depth 13 on 16 positions, idle 4-core machine:
+**1.18x** with 2 threads, **1.11x** with 4 (nodes 0.99x / 1.12x). The
+first root move (a large share of each iteration) is searched alone, the
+static fork-join scheduler cannot rebalance uneven move subtrees, and
+workers do not share a TT. A speculative variant that starts all root
+moves at once against the aspiration alpha was slower (0.86x, 2.2x the
+nodes) and was not kept. `Threads` stays 1 by default (the benchmark
+matches run one game per core anyway).
+
+Speed (instructions per node from callgrind on a fixed-depth search,
+same position; deterministic, unlike nps on a shared machine): the
+phase-1 engine needs 13.4k. Eager SEE raised that to 22.6k; lazy SEE,
+table Zobrist keys, bitboard SEE, loop-free legality, packed records and
+the branching make-move brought it back to 20.3k (PeSTO eval) despite
+the added features (continuation history, correction history,
+quiescence TT, singular extensions). The full evaluation fell from 1.6x
+to 1.3x the cost of PeSTO-only. Profiling shows ~15% of all instructions
+are Bend's spills of live variables between continuation segments (the
+node record carries the 23-word position record); shrinking the position
+record further would require re-proving the make-move laws over packed
+bit fields and was not done.
+
+### 9.3 Correctness after phase 2
+
+Perft suite and random-position perft vs python-chess: all exact. Engine
+tests: **30/30** (adds Threads 2/4, TimePolicy 2/3, Practical). Tactics:
+53/60 Stockfish-derived only-move positions (unchanged). Formal proofs:
+**ALL PROOFS CHECK** after the position-record changes
+(`results/proof_check2.txt`, 9 min 25 s).
+
+## 10. Known limitations
+
+* Strength: see section 8 (phase-1 and phase-2 runs vs the Stockfish
+  UCI_Elo 2850 proxy); easily beatable by full-strength engines.
+* Node rate: the phase-2 search is +114 Elo better at equal nodes but
+  costs ~1.5x the instructions per node of the phase-1 engine, so at a
+  very short time control (5 s + 0.05 s) the net gain is small
+  (+9 [-18, +36]). The remaining overhead is structural (Bend's
+  continuation segments copy the live node state; see 9.2).
+* Parallel search scales poorly (1.18x on 2 threads): no shared TT (Bend
+  arrays are affine), static fork-join with no work stealing, first root
+  move searched alone. Off by default.
 * `stop` cannot interrupt a running search (the Bend IO loop reads stdin
   only between commands); time control is enforced through node budgets
   from the measured speed. `go infinite` is capped.
-* Evaluation is PeSTO piece-square tables only by default; the feature
-  evaluation is measurably more accurate (+73 Elo at equal nodes,
-  preliminary) but too slow in its current form to pay off at equal time.
-* Weight tuning on 7k self-generated positions did not beat the hand
-  weights; external datasets (Lichess, engine-analysis corpora) were not
-  reachable from the sandbox.
+* Several adopted defaults rest on positive but not significant results:
+  full eval at equal time +20 [-9, +50], TimePolicy 3 +18 [-8, +45].
+  The refit evaluation weights fit held-out data better but show no Elo
+  difference from the hand weights.
+* Data is self-play labelled by Stockfish; external corpora (Lichess,
+  engine-analysis sets) were not reachable from the sandbox.
 * Syzygy: root-only probing via a Python helper (no in-search WDL probes);
   only the 3-4-piece tables shipped with python-chess were available here.
 * Repetition: any repetition inside the reversible stretch is scored as a
@@ -171,19 +251,20 @@ calibrated against engine rating lists, not FIDE.
   halfmove clock (graph-history interaction).
 * Proofs cover the stated laws only; movegen/search/eval are tested, not
   proven. `--verdict` (Lean kernel re-check) was not run (no Lean offline).
-* Practical-opponent modelling (Module 8) was not implemented.
+* Practical mode (Module 8) is implemented but its effect against
+  fallible (human-like) opponents was not measured; no such opponent was
+  available offline.
 
-## 10. Highest-value next improvements
+## 11. Highest-value next improvements
 
-1. A faster feature evaluation (pawn bitboards in `Pos`, pawn-structure
-   hash) so the +73 Elo of evaluation knowledge survives at equal time.
-2. SEE-based capture ordering and pruning in quiescence; better TT
-   replacement; history malus / continuation history.
-3. Parallel root-split or shared-TT search once Bend's atomics stabilize.
-4. More data (an external game corpus) for tuning, and a learned cost model
-   feeding the budget policy (currently it uses observed costs only).
-5. Extend the budget-adaptation policy (the component that worked): use
-   the root table's contested-candidate count and score fluctuation in the
-   soft-limit factor, then re-test at longer time controls.
-6. In-search tablebase WDL probes through a native decoder, and the
-   practical-difficulty option of Module 8.
+1. Node rate: a packed position record (side/castling/ep/clocks and king
+   squares in a few words) with the make-move laws re-proved over bit
+   fields; staged move generation (try the TT move before generating).
+2. Shared-memory parallel search once Bend offers safe shared arrays
+   (lazy SMP with a shared TT), or splitting along the PV, not only at
+   the root.
+3. In-search tablebase WDL probes through a native decoder.
+4. An external game corpus for tuning, and tuning the search parameters
+   (margins, reduction tables) with the A/B harness at longer TCs.
+5. Measure the practical mode against human-like opponents (e.g. Maia
+   networks) once available.
