@@ -277,6 +277,45 @@ def test_complexity(e, quick):
     check(f"A estimator: error inside the stated band for {inside}/{len(errs)} positions", inside >= len(errs) * 0.6)
 
 
+def test_options(e, quick):
+    """Parallel search, time policies and practical mode return legal moves
+    and agree with the default search on clear positions."""
+    fens = ["r1bqk2r/pp2bppp/2n1pn2/3p4/2PP4/2N2N2/PP3PPP/R1BQKB1R w KQkq - 0 7",
+            "6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1",
+            "r2q1rk1/pp2bppp/2n1bn2/3p4/3P4/2NBBN2/PP3PPP/R2Q1RK1 w - - 0 10"]
+    depth = 8 if quick else 10
+    for th in (2, 4):
+        e.cmd(f"setoption name Threads value {th}")
+        ok, mate = True, False
+        for f in fens:
+            e.cmd("ucinewgame")
+            best, score, infos = e.go("fen " + f, f"depth {depth}")
+            ok = ok and chess.Move.from_uci(best) in chess.Board(f).legal_moves
+            if f.startswith("6k1"):
+                mate = best == "d1d8" and score == ("mate", 1)
+        check(f"Threads {th}: legal best moves on {len(fens)} positions", ok)
+        check(f"Threads {th}: finds the back-rank mate in 1", mate)
+    e.cmd("setoption name Threads value 1")
+    for tp in (2, 3):
+        e.cmd(f"setoption name TimePolicy value {tp}")
+        e.cmd("ucinewgame")
+        best, score, infos = e.go("fen " + fens[0], "wtime 3000 btime 3000 winc 30 binc 30")
+        check(f"TimePolicy {tp}: timed search returns a legal move",
+              chess.Move.from_uci(best) in chess.Board(fens[0]).legal_moves, best)
+    e.cmd("setoption name TimePolicy value 1")
+    e.cmd("setoption name Practical value 60")
+    ok = True
+    for f in fens:
+        e.cmd("ucinewgame")
+        best, score, infos = e.go("fen " + f, f"depth {depth}")
+        ok = ok and chess.Move.from_uci(best) in chess.Board(f).legal_moves
+        if f.startswith("6k1"):
+            ok = ok and best == "d1d8"
+    check("Practical 60: legal moves, decisive positions unchanged", ok)
+    e.cmd("setoption name Practical value 0")
+    e.cmd("ucinewgame")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--bin", default=os.path.join(ROOT, "build", "bendchess"))
@@ -292,6 +331,7 @@ def main():
         test_search_consistency(e)
         test_tactics(e, args.quick)
         test_complexity(e, args.quick)
+        test_options(e, args.quick)
     finally:
         e.close()
     bad = [n for n, ok in RESULTS if not ok]
