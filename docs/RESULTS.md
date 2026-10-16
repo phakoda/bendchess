@@ -147,3 +147,43 @@ clearly: on Stockfish's UCI_Elo scale it sits roughly 140 points below
 FIDE rating). Caveats: a strength-limited Stockfish is not Carlsen (it
 neither plays his openings nor errs like a human), and UCI_Elo is
 calibrated against engine rating lists, not FIDE.
+
+## 9. Known limitations
+
+* Strength: roughly 140 Elo below a Stockfish set to UCI_Elo 2850; easily
+  beatable by full-strength engines. Not unbeatable, not "solved".
+* Single-threaded. Bend's fork-join parallelism needs independent
+  subtrees; sharing a transposition table would need Bend's experimental
+  `@unsafe` atomic arrays. Root-split parallel search was not attempted.
+* `stop` cannot interrupt a running search (the Bend IO loop reads stdin
+  only between commands); time control is enforced through node budgets
+  from the measured speed. `go infinite` is capped.
+* Evaluation is PeSTO piece-square tables only by default; the feature
+  evaluation is measurably more accurate (+73 Elo at equal nodes,
+  preliminary) but too slow in its current form to pay off at equal time.
+* Weight tuning on 7k self-generated positions did not beat the hand
+  weights; external datasets (Lichess, engine-analysis corpora) were not
+  reachable from the sandbox.
+* Syzygy: root-only probing via a Python helper (no in-search WDL probes);
+  only the 3-4-piece tables shipped with python-chess were available here.
+* Repetition: any repetition inside the reversible stretch is scored as a
+  draw in search (standard simplification); the TT is not keyed by the
+  halfmove clock (graph-history interaction).
+* Proofs cover the stated laws only; movegen/search/eval are tested, not
+  proven. `--verdict` (Lean kernel re-check) was not run (no Lean offline).
+* Practical-opponent modelling (Module 8) was not implemented.
+
+## 10. Highest-value next improvements
+
+1. A faster feature evaluation (pawn bitboards in `Pos`, pawn-structure
+   hash) so the +73 Elo of evaluation knowledge survives at equal time.
+2. SEE-based capture ordering and pruning in quiescence; better TT
+   replacement; history malus / continuation history.
+3. Parallel root-split or shared-TT search once Bend's atomics stabilize.
+4. More data (an external game corpus) for tuning, and a learned cost model
+   feeding the budget policy (currently it uses observed costs only).
+5. Extend the budget-adaptation policy (the component that worked): use
+   the root table's contested-candidate count and score fluctuation in the
+   soft-limit factor, then re-test at longer time controls.
+6. In-search tablebase WDL probes through a native decoder, and the
+   practical-difficulty option of Module 8.
