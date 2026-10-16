@@ -577,7 +577,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name NodesTime type spin default 0 min 0 max 100000")
     IO.print("option name SyzygyPath type string default <empty>")
     IO.print("option name SoftScale type spin default 100 min 10 max 1000")
-    IO.print("option name TimePolicy type spin default 1 min 1 max 3")
+    IO.print("option name TimePolicy type spin default 3 min 1 max 3")
     IO.print("option name Threads type spin default 1 min 1 max 4")
     IO.print("option name Practical type spin default 0 min 0 max 200")
     IO.print("uciok")
