@@ -74,7 +74,7 @@ def Opt.nt(+o: Opt) -> U32:
       nt
 
 def Opt.default() -> Opt:
-  Opt{True{}, True{}, True{}, 0, 1, 0, 100}
+  Opt{True{}, True{}, True{}, 1, 1, 0, 100}
 
 # Small helpers
 # -------------
