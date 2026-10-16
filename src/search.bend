@@ -305,25 +305,10 @@ def ord.h?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U
   (m, +h) = r
   ord.w(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att, bad, h, m[ch.idx(pk, mkey(att, C.mv.to(mv)))])
 
-def ord.s?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
-           +mv: U32, +vic: U32, +att: U32, r: Array<U32> & U32) -> Array<U32>:
-  (m, +sv) = r
-  ord.h(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att, C.s.lt(sv, 0), m[hist.idx(side, mv)])
-
-def ord.a2?(m: Array<U32>, +side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32,
-            +cm: U32, +mv: U32, +vic: U32, +att: U32, needsee: Bool) -> Array<U32>:
-  match needsee:
-    case True{}:
-      ord.s(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att, G.see(m, mv, side))
-    case False{}:
-      ord.h(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att, False{}, m[hist.idx(side, mv)])
-
 def ord.a?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
            +mv: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +att) = r
-  ord.a2(m, side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att,
-    U32.is_ne(vic, 0) && U32.is_lt(C.mv.flag(mv), 3) && U32.is_ne(C.mv.bare(mv), ttm) &&
-    U32.is_gt(G.see.val(U32.to_nat(C.pc.type(att))), G.see.val(U32.to_nat(C.pc.type(vic)))))
+  ord.h(side, base, i, n, ttm, k1, k2, pk, cm, mv, vic, att, False{}, m[hist.idx(side, mv)])
 
 def ord.v?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
            +mv: U32, r: Array<U32> & U32) -> Array<U32>:
@@ -1109,7 +1094,8 @@ def sr.made?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & B.Pos) -> Ar
 def sr.picked?(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +mvk) = r
   +mv = C.mv.bare(mvk)
-  sr.made(nd, lp, mv, U32.shrn(mvk, 17n), B.make(m, Nd.p(nd), mv))
+  +key = U32.shrn(mvk, 17n)
+  sr.pk.a(m, nd, lp, mv, key, U32.is_ge(key, 20000) && U32.is_lt(key, 30000) && U32.is_lt(C.mv.flag(mv), 3))
 
 def sr.loop.go?(m: Array<U32>, +nd: Nd, +lp: Lp, go: Bool) -> Array<U32> & U32:
   match go:
@@ -1220,3 +1206,41 @@ def Nd.cm(+x: Nd) -> U32:
   match x:
     case Nd{_, _, _, _, _, _, _, _, _, _, _, _, cm, _}:
       cm
+
+# Lazy SEE: a capture by a more valuable piece is checked by SEE only when
+# the move picker reaches it; a losing one is re-keyed as a bad capture
+# and the picker runs again (most nodes cut off before this happens)
+def sr.pk.d?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, bad: Bool) -> Array<U32> & U32:
+  match bad:
+    case True{}:
+      m[U32.add(Nd.base(nd), Lp.i(lp))] <- U32.or(mv, U32.shln(U32.add(20, C.pc.type(vic)), 17n))
+      sr.loop(m, nd, lp)
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
+
+def sr.pk.s?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sv) = r
+  sr.pk.d(m, nd, lp, mv, key, vic, C.s.lt(sv, 0))
+
+def sr.pk.c?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, need: Bool) -> Array<U32> & U32:
+  match need:
+    case True{}:
+      sr.pk.s(nd, lp, mv, key, vic, G.see(m, mv, B.P.side(Nd.p(nd))))
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))
+
+def sr.pk.at?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, +vic: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +att) = r
+  sr.pk.c(m, nd, lp, mv, key, vic, U32.is_ne(vic, 0) &&
+    U32.is_gt(G.see.val(U32.to_nat(C.pc.type(att))), G.see.val(U32.to_nat(C.pc.type(vic)))))
+
+def sr.pk.v?(+nd: Nd, +lp: Lp, +mv: U32, +key: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +vic) = r
+  sr.pk.at(nd, lp, mv, key, vic, m[C.mv.from(mv)])
+
+def sr.pk.a?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +key: U32, capband: Bool) -> Array<U32> & U32:
+  match capband:
+    case True{}:
+      sr.pk.v(nd, lp, mv, key, m[C.mv.to(mv)])
+    case False{}:
+      sr.made(nd, lp, mv, key, B.make(m, Nd.p(nd), mv))

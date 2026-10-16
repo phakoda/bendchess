@@ -214,11 +214,28 @@ def addsub(+x: U32, +v: U32, rem: Bool) -> U32:
     case False{}:
       U32.add(x, v)
 
+# Zobrist keys from the generated tables (equal to C.z.lo / C.z.hi etc.)
+def zt.idx(+p: U32, +s: U32) -> Nat:
+  +c6 = U32.mul(C.pc.color(p), 6)
+  U32.to_nat(U32.add(U32.shln(U32.sub(U32.add(c6, C.pc.type(p)), 1), 6n), C.sq.to64(s)))
+
+def zt.lo(+p: U32, +s: U32) -> U32:
+  U32.and(T.z_lo(zt.idx(p, s)), C.bmask(U32.is_ne(p, 0)))
+
+def zt.hi(+p: U32, +s: U32) -> U32:
+  U32.and(T.z_hi(zt.idx(p, s)), C.bmask(U32.is_ne(p, 0)))
+
+def zt.ep.lo(+e: U32) -> U32:
+  U32.and(T.z_ep_lo(U32.to_nat(C.sq.file(e))), C.bmask(C.sq.ok(e)))
+
+def zt.ep.hi(+e: U32) -> U32:
+  U32.and(T.z_ep_hi(U32.to_nat(C.sq.file(e))), C.bmask(C.sq.ok(e)))
+
 # piece p appears on (rem = False) or leaves (rem = True) square s
 def acc.tog(a: Acc, +p: U32, +s: U32, +rem: Bool) -> Acc:
   match a:
     case Acc{hlo, hhi, mg, eg, ph}:
-      Acc{U32.xor(hlo, C.z.lo(p, s)), U32.xor(hhi, C.z.hi(p, s)),
+      Acc{U32.xor(hlo, zt.lo(p, s)), U32.xor(hhi, zt.hi(p, s)),
         addsub(mg, pst.mg(p, s), rem), addsub(eg, pst.eg(p, s), rem),
         addsub(ph, C.pc.phase(p), rem)}
 
@@ -283,10 +300,12 @@ def Pos.after(+p: Pos, +mv: U32, +pc: U32, +cap: U32, +epok: Bool) -> Pos:
       +isk = U32.is_eq(C.pc.type(pc), 6)
       +wk2 = C.sel(isk && U32.is_zero(side), t, wk)
       +bk2 = C.sel(isk && U32.is_eq(side, 1), t, bk)
-      +hl = U32.xor(U32.xor(U32.xor(hlo, C.z.side.lo()), U32.xor(C.z.castle.lo(castle), C.z.castle.lo(castle2))),
-        U32.xor(C.z.ep.lo(ep), C.z.ep.lo(ep2)))
-      +hh = U32.xor(U32.xor(U32.xor(hhi, C.z.side.hi()), U32.xor(C.z.castle.hi(castle), C.z.castle.hi(castle2))),
-        U32.xor(C.z.ep.hi(ep), C.z.ep.hi(ep2)))
+      +hl = U32.xor(U32.xor(U32.xor(hlo, C.z.side.lo()),
+        U32.xor(T.z_castle_lo(U32.to_nat(castle)), T.z_castle_lo(U32.to_nat(castle2)))),
+        U32.xor(zt.ep.lo(ep), zt.ep.lo(ep2)))
+      +hh = U32.xor(U32.xor(U32.xor(hhi, C.z.side.hi()),
+        U32.xor(T.z_castle_hi(U32.to_nat(castle)), T.z_castle_hi(U32.to_nat(castle2)))),
+        U32.xor(zt.ep.hi(ep), zt.ep.hi(ep2)))
       a0 = {Acc{hl, hh, mg, eg, ph} : Acc}
       a1 = acc.tog(a0, pc, f, True{})
       a2 = acc.tog(a1, npc, t, False{})

@@ -166,6 +166,46 @@ def debruijn_table() -> str:
     return "\n".join(out)
 
 
+M32 = 0xFFFFFFFF
+
+
+def mix(x: int) -> int:
+    """The engine's 32-bit mixer (core.bend `mix`)."""
+    x &= M32
+    x ^= x >> 16
+    x = (x * 2146121005) & M32
+    x ^= x >> 15
+    x = (x * 2221713035) & M32
+    return x ^ (x >> 16)
+
+
+def nat_table(name: str, vals) -> str:
+    out = [f"def {name}(n: Nat) -> U32:", "  match n:"]
+    for i, v in enumerate(vals):
+        out += [f"    case {i}n:", f"      {v}"]
+    out += ["    case _:", "      0", ""]
+    return "\n".join(out)
+
+
+def zobrist_tables() -> str:
+    """Zobrist keys, index (colour * 6 + type - 1) * 64 + square64; the same
+    values core.bend's z.lo / z.hi compute (piece p on 0x88 square s)."""
+    lo, hi = [], []
+    for c in range(2):
+        for t in range(1, 7):
+            p = c * 8 + t
+            for i in range(64):
+                s = (i >> 3) * 16 + (i & 7)
+                lo.append(mix((p << 7) + s + 2654435769))
+                hi.append(mix((((p << 7) + s) ^ 1431655765) + 3735928559))
+    cl = [mix(r + 1000003) for r in range(16)]
+    ch = [mix(r + 2000003) for r in range(16)]
+    el = [mix(f + 3000017) for f in range(8)]
+    eh = [mix(f + 4000037) for f in range(8)]
+    return "\n".join([nat_table("z_lo", lo), nat_table("z_hi", hi), nat_table("z_castle_lo", cl),
+                      nat_table("z_castle_hi", ch), nat_table("z_ep_lo", el), nat_table("z_ep_hi", eh)])
+
+
 def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     dst = os.path.join(here, "..", "src", "tables.bend")
@@ -182,6 +222,7 @@ def main() -> None:
         f.write(table("pst_eg", EG, EG_VAL) + "\n")
         f.write(delta_table() + "\n")
         f.write(debruijn_table() + "\n")
+        f.write(zobrist_tables() + "\n")
     print("wrote", os.path.normpath(dst))
 
 
