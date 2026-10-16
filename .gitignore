@@ -8,3 +8,4 @@ data/
 results/*.log
 results/matches/
 results/summary.json
+results/matches_suite64/

@@ -1,0 +1,35 @@
+{
+ "games": 200,
+ "wins": 75,
+ "draws": 70,
+ "losses": 55,
+ "score": 0.55,
+ "elo": 34.86007028756008,
+ "elo_lo": -3.778282761851373,
+ "elo_hi": 74.38116538116641,
+ "preliminary": false,
+ "a": "bend:Complexity=2,NodesTime=100",
+ "b": "bend:Complexity=1,NodesTime=100",
+ "limits": {
+  "nodes": 0,
+  "nodes2": 0,
+  "movetime": 0,
+  "movetime2": 0,
+  "tc": "20+0.2"
+ },
+ "a_avg_depth": 8.161796615073051,
+ "a_avg_nodes": 44976.22255171416,
+ "a_avg_time": 0.44976222551714157,
+ "b_avg_depth": 8.069504778453519,
+ "b_avg_nodes": 44848.152910512596,
+ "b_avg_time": 0.44848152910512595,
+ "a_total_nodes": 621841253,
+ "b_total_nodes": 619442688,
+ "wall_seconds": 507.9337296485901,
+ "terminations": {
+  "checkmate": 130,
+  "threefold_repetition": 49,
+  "fifty_moves": 9,
+  "insufficient_material": 12
+ }
+}
