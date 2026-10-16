@@ -23,6 +23,13 @@
       `Process.run` + python-chess.
 - [x] Formal: LAWS.bend / PROOF.bend (13 laws).
 - [x] Interfaces: UCI, terminal play (tools/play.py), analysis command.
+- [x] Phase 2 (RESULTS.md section 9): faster bitboard evaluation; SEE
+      (bitboard, lazy), history malus / countermoves / continuation history,
+      aged TT, IIR, improving, qsearch TT, history and SEE pruning,
+      singular extensions, correction history; root-split parallel search;
+      5x training data, refit weights, learned iteration-cost model;
+      TimePolicy 2/3; practical mode (Module 8); speed work; proofs
+      re-checked; 30/30 engine tests.
 
 ## Commands
 
@@ -42,8 +49,8 @@ bend PROOF.bend
   from the sandbox); data is self-generated.
 - `stop` cannot interrupt a running search (Bend reads stdin only between
   commands); `go infinite` is capped.
-- Single-threaded search (Bend's fork-join parallelism needs independent
-  subtrees; a shared TT would need the experimental atomic arrays).
+- Parallel search exists (root split, `Threads`) but scales poorly
+  without a shared TT (1.18x on 2 threads).
 
 ## Next executable task
 
