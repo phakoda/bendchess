@@ -1023,3 +1023,12 @@ def npieces(+p: Pos) -> U32:
 def dead(+p: Pos) -> Bool:
   +n = npieces(p)
   U32.is_eq(n, 2) || (U32.is_eq(n, 3) && U32.is_eq(P.ph(p), 1))
+
+# a hash of the pawn structure (both colours)
+def pawnkey.o(o: Occ) -> U32:
+  match o:
+    case Occ{_, _, _, _, wp0, wp1, bp0, bp1}:
+      C.mix(U32.xor(wp0, C.mix(U32.xor(wp1, C.mix(U32.xor(bp0, C.mix(U32.add(bp1, 1))))))))
+
+def pawnkey(+p: Pos) -> U32:
+  pawnkey.o(P.occ(p))
