@@ -53,6 +53,13 @@ def gp.set(g: Gp, key: String, +v: U32) -> Gp:
         C.sel(str.eq(k, "depth"), v, depth), C.sel(str.eq(k, "nodes"), v, nodes),
         inf || str.eq(k, "infinite")}
 
+def go.parse.b?(k: String, +v: String, rest: List<&2, String>, g: Gp, single: Bool) -> Gp:
+  match single:
+    case True{}:
+      go.parse(Con{v, rest}, g)
+    case False{}:
+      go.parse(rest, g)
+
 def go.parse?(toks: List<&2, String>, g: Gp) -> Gp:
   match toks:
     case Nil{}:
@@ -61,13 +68,6 @@ def go.parse?(toks: List<&2, String>, g: Gp) -> Gp:
       gp.set(g, k, 0)
     case Con{+k, Con{+v, rest}}:
       go.parse.b(k, v, rest, gp.set(g, k, B.str.u32(v, 0)), str.eq(k, "infinite"))
-
-def go.parse.b?(k: String, +v: String, rest: List<&2, String>, g: Gp, single: Bool) -> Gp:
-  match single:
-    case True{}:
-      go.parse(Con{v, rest}, g)
-    case False{}:
-      go.parse(rest, g)
 
 def BIG() -> U32:
   4000000000
@@ -136,9 +136,6 @@ def score.str.go(+s: U32, win: Bool, loss: Bool) -> String:
 def score.str(+s: U32) -> String:
   score.str.go(s, C.s.ge(s, C.MATE_BOUND()), C.s.le(s, C.s.neg(C.MATE_BOUND())))
 
-def pv.str?(m: Array<U32>, +k: U32, +len: U32, acc: String) -> Array<U32> & String:
-  pv.str.go(m, k, len, acc, U32.is_lt(k, len))
-
 def pv.str.b?(+k: U32, +len: U32, acc: String, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +mv) = r
   pv.str(m, U32.add(k, 1), len, acc ++ " " ++ B.mv.uci(mv))
@@ -150,10 +147,8 @@ def pv.str.go?(m: Array<U32>, +k: U32, +len: U32, acc: String, go: Bool) -> Arra
     case True{}:
       pv.str.b(k, len, acc, m[U32.add(B.PVT(), k)])
 
-def asp.res?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32,
-             r: (Array<U32> & U32) & R.Ws) -> (Array<U32> & U32) & R.Ws:
-  (ms, ws) = r
-  asp.res.m(p, d, chk, o, a, b, delta, ws, ms)
+def pv.str?(m: Array<U32>, +k: U32, +len: U32, acc: String) -> Array<U32> & String:
+  pv.str.go(m, k, len, acc, U32.is_lt(k, len))
 
 # Aspiration windows
 # ------------------
@@ -188,6 +183,11 @@ def asp.res.m?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +del
                r: Array<U32> & U32) -> (Array<U32> & U32) & R.Ws:
   (m, +s) = r
   asp.res.b(p, d, chk, o, a, b, delta, s, ws, S.stopped(m))
+
+def asp.res?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32,
+             r: (Array<U32> & U32) & R.Ws) -> (Array<U32> & U32) & R.Ws:
+  (ms, ws) = r
+  asp.res.m(p, d, chk, o, a, b, delta, ws, ms)
 
 def aspire(m: Array<U32>, ws: R.Ws, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +prev: U32) ->
   (Array<U32> & U32) & R.Ws:
@@ -242,10 +242,16 @@ type Dr is Data:
   Dr{p: B.Pos, o: S.Opt, lim: Lim, t0: Nat, chk: Bool, used: U32, best: U32, score: U32, npms: U32,
      verbose: Bool, sp: U32, stab: U32}
 
-def Dr.fin(m: Array<U32>, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
+def Dr.fin.b(+score: U32, r: Array<U32> & U32) -> IO(Array<U32> & (U32 & U32)):
+  (m, +best) = r
+  IO.pure(Array<U32> & (U32 & U32), (m, (best, score)))
+
+# the search is over; with Practical > 0 the move may be swapped for a
+# near-equal one that sets the opponent more problems (root.bend)
+def Dr.fin(m: Array<U32>, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
   match dr:
-    case Dr{p, o, lim, t0, chk, used, best, score, npms, verbose, sp, stab}:
-      IO.pure(Array<U32> & (U32 & U32), (m, (best, score)))
+    case Dr{+p, +o, lim, t0, +chk, used, +best, +score, npms, verbose, sp, stab}:
+      Dr.fin.b(score, R.practical(m, p, o, d, best, score))
 
 def id.info(+d: U32, +s: U32, +used: U32, +ms: U32, +seld: U32, pv: String) -> String:
   "info depth " ++ U32.show(d) ++ " seldepth " ++ U32.show(seld) ++ " score " ++ score.str(s) ++
@@ -310,11 +316,6 @@ def id.more(+cas: U32, +ss: U32, +tp: U32, +eff: U32, +d: U32, +s: U32, +score0:
   +fits = U32.is_lt(d, 4) || U32.is_ge(Lim.hard(lim), BIG()) || U32.is_le(U32.add(ms, pred_ms), Lim.hard(lim))
   more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft0), base && U32.is_lt(ms, soft2) && fits)
 
-def id.done.c?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & U32) ->
-  IO(Array<U32> & (U32 & U32)):
-  (m, +len) = r
-  id.after(d, budget, s, dr, ws, now, pv.str(m, 0, len, ""))
-
 def id.done.b?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, m: Array<U32>, now: Nat) ->
   IO(Array<U32> & (U32 & U32)):
   id.done.c(d, budget, s, dr, ws, now, mem.read(m, B.PVLEN()))
@@ -343,7 +344,7 @@ def id.iter.t?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, now: Nat) -> IO(Array<U
 def id.next?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, more: Bool) -> IO(Array<U32> & (U32 & U32)):
   match more:
     case False{}:
-      Dr.fin(m, dr)
+      Dr.fin(m, d, dr)
     case True{}:
       # through IO.bind (a closure call), not a direct call: a direct call
       # here makes Bend 2.0.37 emit a fused C function before its
@@ -382,6 +383,11 @@ def id.after?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Ar
       id.after.b(d, budget, s, p, o, lim, t0, chk, used0, best0, score0, npms0, verbose, sp, stab, now, pv, ws,
         it.read(m))
 
+def id.done.c?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & U32) ->
+  IO(Array<U32> & (U32 & U32)):
+  (m, +len) = r
+  id.after(d, budget, s, dr, ws, now, pv.str(m, 0, len, ""))
+
 def id.iter?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
   IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.iter.t(m, ws, d, dr))
 
@@ -404,13 +410,6 @@ def think(m: Array<U32>, +p: B.Pos, +o: S.Opt, +lim: Lim, +verbose: Bool) ->
   IO(Array<U32> & (U32 & U32)):
   IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), think.t(m, p, o, lim, verbose))
 
-# Position command
-# ----------------
-
-def moves.apply.b?(rest: List<&2, String>, r: Array<U32> & B.Pos) -> Array<U32> & B.Pos:
-  (m, +p) = r
-  moves.apply(m, p, rest)
-
 def moves.apply.c?(m: Array<U32>, +p: B.Pos, +mv: U32, rest: List<&2, String>, bad: Bool) ->
   Array<U32> & B.Pos:
   match bad:
@@ -431,9 +430,23 @@ def moves.apply?(m: Array<U32>, +p: B.Pos, toks: List<&2, String>) -> Array<U32>
     case Con{s, rest}:
       moves.apply.a(p, rest, G.find_move(m, p, s, 0))
 
+# Position command
+# ----------------
+
+def moves.apply.b?(rest: List<&2, String>, r: Array<U32> & B.Pos) -> Array<U32> & B.Pos:
+  (m, +p) = r
+  moves.apply(m, p, rest)
+
 def until.moves.c(h: String, r: List<&2, String> & List<&2, String>) -> List<&2, String> & List<&2, String>:
   (a, b) = r
   (Con{h, a}, b)
+
+def until.moves.b?(h: String, t: List<&2, String>, stop: Bool) -> List<&2, String> & List<&2, String>:
+  match stop:
+    case True{}:
+      (Nil{}, t)
+    case False{}:
+      until.moves.c(h, until.moves(t))
 
 # split tokens at "moves": (before, after)
 def until.moves?(toks: List<&2, String>) -> List<&2, String> & List<&2, String>:
@@ -442,13 +455,6 @@ def until.moves?(toks: List<&2, String>) -> List<&2, String> & List<&2, String>:
       (Nil{}, Nil{})
     case Con{+h, t}:
       until.moves.b(h, t, str.eq(h, "moves"))
-
-def until.moves.b?(h: String, t: List<&2, String>, stop: Bool) -> List<&2, String> & List<&2, String>:
-  match stop:
-    case True{}:
-      (Nil{}, t)
-    case False{}:
-      until.moves.c(h, until.moves(t))
 
 def pos.fen.b(mvs: List<&2, String>, r: Array<U32> & B.Pos) -> Array<U32> & B.Pos:
   (m, +p) = r
@@ -490,13 +496,6 @@ def line.cons(+c: Char, r: Maybe<&1, String & String>) -> Maybe<&1, String & Str
     case Some{(l, rest)}:
       Some{(SCon{c, l}, rest)}
 
-def line.at?(+c: Char, rest: String, nl: Bool) -> Maybe<&1, String & String>:
-  match nl:
-    case True{}:
-      Some{(SNil{}, rest)}
-    case False{}:
-      line.cons(c, line.split(rest))
-
 # the first line of s (without its newline) and the rest, if s has a newline
 def line.split?(s: String) -> Maybe<&1, String & String>:
   match s:
@@ -504,6 +503,13 @@ def line.split?(s: String) -> Maybe<&1, String & String>:
       None{}
     case SCon{+c, rest}:
       line.at(c, rest, U32.is_eq(Char.to_u32(c), 10))
+
+def line.at?(+c: Char, rest: String, nl: Bool) -> Maybe<&1, String & String>:
+  match nl:
+    case True{}:
+      Some{(SNil{}, rest)}
+    case False{}:
+      line.cons(c, line.split(rest))
 
 def line.clean.c(+c: Char, rest: String, cr: Bool, tab: Bool) -> String:
   match cr tab:
@@ -554,6 +560,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name SoftScale type spin default 100 min 10 max 1000")
     IO.print("option name TimePolicy type spin default 1 min 1 max 2")
     IO.print("option name Threads type spin default 1 min 1 max 4")
+    IO.print("option name Practical type spin default 0 min 0 max 200")
     IO.print("uciok")
 
 def opt.bool(v: String) -> Bool:
@@ -568,7 +575,7 @@ def opt.pick(c: Bool, a: Bool, b: Bool) -> Bool:
 
 def opt.set.b(o: S.Opt, +name: String, +v: String) -> S.Opt:
   match o:
-    case S.Opt{null, lmr, prune, cas, evm, nt, ss, tp, th}:
+    case S.Opt{null, lmr, prune, cas, evm, nt, ss, tp, th, pr}:
       S.Opt{opt.pick(str.eq(name, "NullMove"), opt.bool(v), null),
         opt.pick(str.eq(name, "LMR"), opt.bool(v), lmr),
         opt.pick(str.eq(name, "Pruning"), opt.bool(v), prune),
@@ -577,7 +584,8 @@ def opt.set.b(o: S.Opt, +name: String, +v: String) -> S.Opt:
         C.sel(str.eq(name, "NodesTime"), B.str.u32(v, 0), nt),
         C.sel(str.eq(name, "SoftScale"), B.str.u32(v, 100), ss),
         C.sel(str.eq(name, "TimePolicy"), B.str.u32(v, 1), tp),
-        C.sel(str.eq(name, "Threads"), B.str.u32(v, 1), th)}
+        C.sel(str.eq(name, "Threads"), B.str.u32(v, 1), th),
+        C.sel(str.eq(name, "Practical"), B.str.u32(v, 0), pr)}
 
 # setoption name <N> value <V>
 def opt.set(o: S.Opt, toks: List<&2, String>) -> S.Opt:
@@ -598,9 +606,6 @@ def cmd.code(+c: String) -> U32:
 def TBPATH() -> U32:
   U32.add(B.SC(), 256)
 
-def mstr.get.go?(m: Array<U32>, +base: U32, +k: U32, acc: String) -> Array<U32> & String:
-  mstr.get.b(m, base, k, acc, U32.is_zero(k))
-
 def mstr.get.c?(+base: U32, +k: U32, acc: String, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +c) = r
   mstr.get.go(m, base, U32.sub(k, 1), SCon{Chr{c}, acc})
@@ -612,6 +617,9 @@ def mstr.get.b?(m: Array<U32>, +base: U32, +k: U32, acc: String, done: Bool) -> 
     case False{}:
       mstr.get.c(base, k, acc, m[U32.add(base, k)])
 
+def mstr.get.go?(m: Array<U32>, +base: U32, +k: U32, acc: String) -> Array<U32> & String:
+  mstr.get.b(m, base, k, acc, U32.is_zero(k))
+
 def mstr.get.a?(+base: U32, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +len) = r
   mstr.get.go(m, base, U32.min(len, 1000), SNil{})
@@ -622,25 +630,36 @@ def mstr.get(m: Array<U32>, +base: U32) -> Array<U32> & String:
 def HELPER() -> U32:
   U32.add(B.SC(), 1280)
 
-def uci.go.tb8?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>,
-                +mvs: String, +w: String, +d: String, root: Bool, conv: Bool) -> IO(Unit):
-  match root conv:
-    case True{} _:
-      +dz = B.str.u32(d, 0)
-      +sc = C.sel(str.eq(w, "2"), U32.sub(20000, dz), C.sel(str.eq(w, "-2"), U32.sub(0, U32.sub(20000, dz)), 0))
-      do IO<Unit>:
-        IO.print("info string syzygy: tablebase position, WDL " ++ w ++ " (side to move), DTZ " ++ d)
-        IO.print("info depth 1 score cp " ++ C.s.show(sc) ++ " nodes 0 pv " ++ mvs)
-        IO.print("bestmove " ++ mvs)
-        uci.loop(m, p, o, buf, f)
-    case False{} True{}:
-      uci.go.search(m, p, o, f, buf, toks, mvs)
-    case False{} False{}:
-      uci.go.search(m, p, o, f, buf, toks, "")
-
 def uci.go.tb7?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>,
                 +kind: String, +mvs: String, +w: String, +d: String) -> IO(Unit):
   uci.go.tb8(m, p, o, f, buf, toks, mvs, w, d, str.eq(kind, "root"), str.eq(kind, "convert") && str.eq(w, "2"))
+
+def go.out.c?(+o: S.Opt, f: File, buf: String, +conv: String, m: Array<U32>, +p: B.Pos, +best: U32, use: Bool) -> IO(Unit):
+  match use:
+    case True{}:
+      do IO<Unit>:
+        IO.print("info string syzygy: " ++ conv ++ " converts to a tablebase win (proven); search preferred " ++ B.mv.uci(best))
+        IO.print("bestmove " ++ conv)
+        uci.loop(m, p, o, buf, f)
+    case False{}:
+      do IO<Unit>:
+        IO.print("bestmove " ++ B.mv.uci(best))
+        uci.loop(m, p, o, buf, f)
+
+# go: tablebase probe first (when SyzygyPath is set), then search
+def go.out.b?(+o: S.Opt, f: File, buf: String, +conv: String, m: Array<U32>, +p: B.Pos, bs: U32 & U32) -> IO(Unit):
+  (+best, +score) = bs
+  go.out.c(o, f, buf, conv, m, p, best, Bool.not(String.is_empty(conv)) && C.s.lt(score, C.MATE_BOUND()))
+
+def go.out?(+o: S.Opt, f: File, buf: String, +conv: String, r: Array<U32> & (U32 & U32), +p: B.Pos) -> IO(Unit):
+  (m, bs) = r
+  go.out.b(o, f, buf, conv, m, p, bs)
+
+def uci.go.search?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>, +conv: String) ->
+  IO(Unit):
+  IO.bind(Array<U32> & (U32 & U32), Unit,
+    think(m, p, o, go.limits(go.parse(toks, Gp.empty()), B.P.side(p)), True{}),
+    r => go.out(o, f, buf, conv, r, p))
 
 def uci.go.tb6?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>,
                 ws: List<&2, String>) -> IO(Unit):
@@ -1064,39 +1083,21 @@ def uci.loop?(m: Array<U32>, +p: B.Pos, +o: S.Opt, buf: String, f: File) -> IO(U
   +b = buf
   uci.next(m, p, o, f, b, line.split(b))
 
-def go.out.c?(+o: S.Opt, f: File, buf: String, +conv: String, m: Array<U32>, +p: B.Pos, +best: U32, use: Bool) -> IO(Unit):
-  match use:
-    case True{}:
+def uci.go.tb8?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>,
+                +mvs: String, +w: String, +d: String, root: Bool, conv: Bool) -> IO(Unit):
+  match root conv:
+    case True{} _:
+      +dz = B.str.u32(d, 0)
+      +sc = C.sel(str.eq(w, "2"), U32.sub(20000, dz), C.sel(str.eq(w, "-2"), U32.sub(0, U32.sub(20000, dz)), 0))
       do IO<Unit>:
-        IO.print("info string syzygy: " ++ conv ++ " converts to a tablebase win (proven); search preferred " ++ B.mv.uci(best))
-        IO.print("bestmove " ++ conv)
+        IO.print("info string syzygy: tablebase position, WDL " ++ w ++ " (side to move), DTZ " ++ d)
+        IO.print("info depth 1 score cp " ++ C.s.show(sc) ++ " nodes 0 pv " ++ mvs)
+        IO.print("bestmove " ++ mvs)
         uci.loop(m, p, o, buf, f)
-    case False{}:
-      do IO<Unit>:
-        IO.print("bestmove " ++ B.mv.uci(best))
-        uci.loop(m, p, o, buf, f)
-
-# go: tablebase probe first (when SyzygyPath is set), then search
-def go.out.b?(+o: S.Opt, f: File, buf: String, +conv: String, m: Array<U32>, +p: B.Pos, bs: U32 & U32) -> IO(Unit):
-  (+best, +score) = bs
-  go.out.c(o, f, buf, conv, m, p, best, Bool.not(String.is_empty(conv)) && C.s.lt(score, C.MATE_BOUND()))
-
-def go.out?(+o: S.Opt, f: File, buf: String, +conv: String, r: Array<U32> & (U32 & U32), +p: B.Pos) -> IO(Unit):
-  (m, bs) = r
-  go.out.b(o, f, buf, conv, m, p, bs)
-
-def uci.go.search?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>, +conv: String) ->
-  IO(Unit):
-  IO.bind(Array<U32> & (U32 & U32), Unit,
-    think(m, p, o, go.limits(go.parse(toks, Gp.empty()), B.P.side(p)), True{}),
-    r => go.out(o, f, buf, conv, r, p))
-
-def path.drop.b?(rest: String, slash: Bool) -> String:
-  match slash:
-    case True{}:
-      rest
-    case False{}:
-      path.drop(rest)
+    case False{} True{}:
+      uci.go.search(m, p, o, f, buf, toks, mvs)
+    case False{} False{}:
+      uci.go.search(m, p, o, f, buf, toks, "")
 
 def path.drop?(s: String) -> String:
   match s:
@@ -1104,6 +1105,13 @@ def path.drop?(s: String) -> String:
       SNil{}
     case SCon{+c, rest}:
       path.drop.b(rest, U32.is_eq(Char.to_u32(c), 47))
+
+def path.drop.b?(rest: String, slash: Bool) -> String:
+  match slash:
+    case True{}:
+      rest
+    case False{}:
+      path.drop(rest)
 
 # the directory part of a path ("" when there is none)
 def path.parent(s: String) -> String:

@@ -44,41 +44,42 @@ def SELD() -> U32:
 # tp: TimePolicy, 1 = budget adaptation v1, 2 = v2 (adds best-move node
 #     effort and graded score drops; see uci.bend id.more)
 # th: Threads, root-split parallel search workers (1, 2 or 4)
+# pr: Practical, margin in cp for the practical-difficulty choice (0 = off)
 type Opt is Data:
-  Opt{null: Bool, lmr: Bool, prune: Bool, cas: U32, evm: U32, nt: U32, ss: U32, tp: U32, th: U32}
+  Opt{null: Bool, lmr: Bool, prune: Bool, cas: U32, evm: U32, nt: U32, ss: U32, tp: U32, th: U32, pr: U32}
 
 def Opt.null(+o: Opt) -> Bool:
   match o:
-    case Opt{null, _, _, _, _, _, _, _, _}:
+    case Opt{null, _, _, _, _, _, _, _, _, _}:
       null
 
 def Opt.lmr(+o: Opt) -> Bool:
   match o:
-    case Opt{_, lmr, _, _, _, _, _, _, _}:
+    case Opt{_, lmr, _, _, _, _, _, _, _, _}:
       lmr
 
 def Opt.prune(+o: Opt) -> Bool:
   match o:
-    case Opt{_, _, prune, _, _, _, _, _, _}:
+    case Opt{_, _, prune, _, _, _, _, _, _, _}:
       prune
 
 def Opt.cas(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, cas, _, _, _, _, _}:
+    case Opt{_, _, _, cas, _, _, _, _, _, _}:
       cas
 
 def Opt.evm(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, evm, _, _, _, _}:
+    case Opt{_, _, _, _, evm, _, _, _, _, _}:
       evm
 
 def Opt.nt(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, _, nt, _, _, _}:
+    case Opt{_, _, _, _, _, nt, _, _, _, _}:
       nt
 
 def Opt.default() -> Opt:
-  Opt{True{}, True{}, True{}, 1, 1, 0, 100, 1, 1}
+  Opt{True{}, True{}, True{}, 1, 1, 0, 100, 1, 1, 0}
 
 # Small helpers
 # -------------
@@ -133,10 +134,6 @@ def stopped(m: Array<U32>) -> Array<U32> & Bool:
 def rep.slot(+hidx: U32, +k: U32) -> U32:
   U32.add(B.HISTH(), U32.shln(U32.and(U32.sub(hidx, k), 4095), 1n))
 
-def rep?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32) ->
-  Array<U32> & Bool:
-  rep.go(m, hlo, hhi, hidx, k, lim, U32.is_le(k, lim))
-
 # Draw detection
 # --------------
 # Fifty-move rule (halfmove clock >= 100) and repetition: the current hash
@@ -177,6 +174,10 @@ def rep.go?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32,
       (m, False{})
     case True{}:
       rep.a(hlo, hhi, hidx, k, lim, m[rep.slot(hidx, k)])
+
+def rep?(m: Array<U32>, +hlo: U32, +hhi: U32, +hidx: U32, +k: U32, +lim: U32) ->
+  Array<U32> & Bool:
+  rep.go(m, hlo, hhi, hidx, k, lim, U32.is_le(k, lim))
 
 def draw.rep(fifty: Bool, m: Array<U32>, +p: B.Pos) -> Array<U32> & Bool:
   match fifty:
@@ -304,14 +305,6 @@ def CHIST() -> U32:
 def ch.idx(+pk: U32, +ck: U32) -> U32:
   U32.add(CHIST(), U32.add(U32.mul(U32.min(pk, 768), 768), U32.min(ck, 767)))
 
-def ord.go?(m: Array<U32>, +side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32,
-            +k2: U32, +pk: U32, +cm: U32, go: Bool) -> Array<U32>:
-  match go:
-    case False{}:
-      m
-    case True{}:
-      ord.m(side, base, i, n, ttm, k1, k2, pk, cm, m[U32.add(base, i)])
-
 def ord?(m: Array<U32>, +side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U32, +pk: U32,
          +cm: U32) -> Array<U32>:
   ord.go(m, side, base, i, n, ttm, k1, k2, pk, cm, U32.is_lt(i, n))
@@ -342,12 +335,27 @@ def ord.m?(+side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32, +k2: U
   (m, +mv) = r
   ord.v(side, base, i, n, ttm, k1, k2, pk, cm, mv, m[C.mv.to(mv)])
 
+def ord.go?(m: Array<U32>, +side: U32, +base: U32, +i: U32, +n: U32, +ttm: U32, +k1: U32,
+            +k2: U32, +pk: U32, +cm: U32, go: Bool) -> Array<U32>:
+  match go:
+    case False{}:
+      m
+    case True{}:
+      ord.m(side, base, i, n, ttm, k1, k2, pk, cm, m[U32.add(base, i)])
+
 # selection: swap the largest word of m[base+i .. base+n) into slot i
 def pick.fin(+base: U32, +i: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +vi) = r
   m[U32.add(base, bi)] <- vi
   m[U32.add(base, i)] <- bv
   (m, bv)
+
+def pick.v?(+base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +v) = r
+  +better = U32.is_gt(v, bv)
+  pick.go(m, base, i, U32.add(j, 1), n, C.sel(better, j, bi), C.sel(better, v, bv),
+    U32.is_lt(U32.add(j, 1), n))
 
 def pick.go?(m: Array<U32>, +base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, go: Bool) ->
   Array<U32> & U32:
@@ -357,22 +365,12 @@ def pick.go?(m: Array<U32>, +base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv
     case False{}:
       pick.fin(base, i, bi, bv, m[U32.add(base, i)])
 
-def pick.v?(+base: U32, +i: U32, +j: U32, +n: U32, +bi: U32, +bv: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +v) = r
-  +better = U32.is_gt(v, bv)
-  pick.go(m, base, i, U32.add(j, 1), n, C.sel(better, j, bi), C.sel(better, v, bv),
-    U32.is_lt(U32.add(j, 1), n))
-
 def pick.a(+base: U32, +i: U32, +n: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
   pick.go(m, base, i, U32.add(i, 1), n, i, v, U32.is_lt(U32.add(i, 1), n))
 
 def pick(m: Array<U32>, +base: U32, +i: U32, +n: U32) -> Array<U32> & U32:
   pick.a(base, i, n, m[U32.add(base, i)])
-
-def pv.copy?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32) -> Array<U32>:
-  pv.copy.go(m, dst, src, k, len, U32.is_lt(k, len))
 
 # Principal variation
 # -------------------
@@ -388,6 +386,9 @@ def pv.copy.go?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32, go: Boo
       m
     case True{}:
       pv.copy.b(dst, src, k, len, m[U32.add(src, k)])
+
+def pv.copy?(m: Array<U32>, +dst: U32, +src: U32, +k: U32, +len: U32) -> Array<U32>:
+  pv.copy.go(m, dst, src, k, len, U32.is_lt(k, len))
 
 def pv.row(+ply: U32) -> U32:
   U32.add(B.PVT(), U32.shln(ply, 7n))
@@ -453,10 +454,6 @@ def grav.at(m: Array<U32>, +i: U32, +b: U32) -> Array<U32>:
 def hbonus(+d: U32) -> U32:
   U32.min(U32.mul(U32.mul(d, d), 32), 1600)
 
-def malus.mv?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, r: Array<U32> & U32) -> Array<U32>:
-  (m, +mv) = r
-  malus.k(side, pk, qb, j, nq, b, mv, m[C.mv.from(mv)])
-
 def malus.go?(m: Array<U32>, +side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, go: Bool) -> Array<U32>:
   match go:
     case False{}:
@@ -474,6 +471,10 @@ def malus.k?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, +mv: U3
   m = grav.at(m, hist.idx(side, mv), C.s.neg(b))
   m = grav.at(m, ch.idx(pk, mkey(pc, C.mv.to(mv))), C.s.neg(b))
   malus(m, side, pk, qb, U32.add(j, 1), nq, b)
+
+def malus.mv?(+side: U32, +pk: U32, +qb: U32, +j: U32, +nq: U32, +b: U32, r: Array<U32> & U32) -> Array<U32>:
+  (m, +mv) = r
+  malus.k(side, pk, qb, j, nq, b, mv, m[C.mv.from(mv)])
 
 def good_quiet.b(+side: U32, +ply: U32, +depth: U32, +mv: U32, +pk: U32, +nq: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +pc) = r
@@ -626,13 +627,6 @@ def pv.upd.if(m: Array<U32>, +ply: U32, +mv: U32, go: Bool) -> Array<U32>:
 # unmake, then: has the search been stopped?
 def unmake.mem(m: Array<U32>, +np: B.Pos, +mv: U32) -> Array<U32> & Bool:
   stopped(B.unmake(m, np, mv))
-
-def qs.after.b?(r: Array<U32> & Bool, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & U32:
-  match r:
-    case (m, False{}):
-      qs.upd(m, nd, lp, mv, s)
-    case (m, True{}):
-      (m, 0)
 
 def qs.after?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +raw) = r
@@ -828,6 +822,13 @@ def qs.upd?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & 
         Lp{C.sel(raise, s, alpha), best2, C.sel(better, mv, bmv), U32.add(i, 1), U32.add(legal, 1), quiets, 0},
         best2, C.s.ge(s, Nd.beta(nd)))
 
+def qs.after.b?(r: Array<U32> & Bool, +nd: Nd, +lp: Lp, +mv: U32, +s: U32) -> Array<U32> & U32:
+  match r:
+    case (m, False{}):
+      qs.upd(m, nd, lp, mv, s)
+    case (m, True{}):
+      (m, 0)
+
 def corr.upd(+i: U32, +depth: U32, +diff: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +c) = r
   +d16 = U32.mul(C.s.max(C.s.min(diff, 400), C.s.neg(400)), 16)
@@ -904,17 +905,6 @@ def Lp.nq(+x: Lp) -> U32:
     case Lp{_, _, _, _, _, _, nq}:
       nq
 
-def sr.cut?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool, cut: Bool) ->
-  Array<U32> & U32:
-  match cut:
-    case False{}:
-      sr.loop(m, nd, lp)
-    case True{}:
-      m = good_quiet.if(m, B.P.side(Nd.p(nd)), Nd.ply(nd), Nd.depth(nd), mv, Nd.pk(nd), Lp.nq(lp), quiet)
-      m = corr.if(m, Nd.p(nd), Nd.depth(nd), U32.sub(s, Nd.ev(nd)),
-        quiet && Bool.not(Nd.chk(nd)) && C.s.gt(s, Nd.ev(nd)) && C.s.lt(C.s.abs(s), C.MATE_BOUND()) && Nd.real(nd))
-      (tt.store.if(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), 2, s, mv, Nd.real(nd)), s)
-
 # record a searched quiet move (for the malus) unless it caused the cutoff
 def rec.quiet(m: Array<U32>, +ply: U32, +nq: U32, +mv: U32, go: Bool) -> Array<U32>:
   match go:
@@ -948,6 +938,295 @@ def sr.after?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, r: Array<U32
   Array<U32> & U32:
   (m, +raw) = r
   sr.after.b(unmake.mem(m, np, mv), nd, lp, mv, C.s.neg(raw), quiet)
+
+def sr.sx?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
+           +imp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sx) = r
+  m[sx.slot(ply)] <- 0
+  m = ord(m, B.P.side(p), base, 0, n, ttm, k1, k2, pk, cm)
+  sr.loop(m, Nd{p, depth, beta, ply, pv, chk, ev, base, n, alpha, o, pk, cm, U32.is_ne(imp, 0), sx},
+    Lp{alpha, U32.add(C.s.neg(C.INF()), 0), 0, 0, 0, 0, 0})
+
+def sr.imp?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
+            r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +imp) = r
+  sr.sx(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm, imp, m[sx.slot(ply)])
+
+def sr.cm?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +cm) = r
+  sr.imp(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm,
+    m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))])
+
+def sr.pk?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +pk0) = r
+  +pk = C.sel(U32.is_zero(ply), PK_NONE(), U32.min(pk0, 768))
+  sr.cm(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, m[U32.add(CMOVE(), pk)])
+
+def sr.k2?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +k2) = r
+  sr.pk(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, m[U32.add(B.PLYAUX(), U32.shln(ply, 2n))])
+
+def sr.k1?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +k1) = r
+  sr.k2(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1,
+    m[U32.add(U32.add(B.KILLERS(), U32.shln(ply, 1n)), 1)])
+
+# CAS level 3 (in-tree allocation): a node with at most 3 pseudo-legal
+# moves is a forced line (cheap to resolve, often decisive): +1 ply
+def sr.gen?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +n) = r
+  +ext = C.b2u(U32.is_ge(Opt.cas(o), 3) && U32.is_le(n, 3) && U32.is_lt(ply, 40))
+  sr.k1(p, U32.add(depth, ext), alpha, beta, ply, chk, ev, pv, ttm, o, base, n,
+    m[U32.add(B.KILLERS(), U32.shln(ply, 1n))])
+
+# internal iterative reduction: without a TT move a deep node is likely
+# mis-ordered, so it is searched one ply shallower
+def sr.moves.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+                 +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
+  +base = ply_moves(ply)
+  +d2 = C.sel(U32.is_zero(ttm) && U32.is_ge(depth, 4), U32.sub(depth, 1), depth)
+  sr.gen(p, d2, alpha, beta, ply, chk, ev, pv, ttm, o, base, G.gen(m, p, base, 0))
+
+def se.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+           +pv: Bool, +ttm: U32, +o: Opt, +sbeta: U32, single: Bool, mcut: Bool) -> Array<U32> & U32:
+  match single mcut:
+    case True{} _:
+      m[sx.slot(ply)] <- ttm
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+    case False{} True{}:
+      (m, sbeta)
+    case False{} False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+# Singular extensions: at a deep node whose TT entry (deep enough, lower or
+# exact bound) proposes ttm, search the other moves at half depth against
+# sbeta = ttsc - 2 * depth. All failing low: ttm is singular and is
+# extended by one ply. Failing high with sbeta >= beta: several moves beat
+# beta (multi-cut), answer sbeta.
+def se.res?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+            +ttm: U32, +o: Opt, +sbeta: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  +single = C.s.lt(v, sbeta)
+  se.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta, single,
+    Bool.not(single) && C.s.ge(sbeta, beta) && Bool.not(pv))
+
+def se.run?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, +sc: U32, ok: Bool) -> Array<U32> & U32:
+  match ok:
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+    case True{}:
+      +sbeta = U32.sub(sc, U32.mul(depth, 2))
+      m[sx.slot(ply)] <- U32.or(ttm, 2147483648)
+      se.res(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta,
+        sr.moves.go(m, p, U32.div(U32.sub(depth, 1), 2), U32.sub(sbeta, 1), sbeta, ply, chk, ev, False{}, ttm, o))
+
+def se.d?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +data: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sc0) = r
+  +bnd = U32.and(U32.shrn(data, 17n), 3)
+  +ttd = U32.and(U32.shrn(data, 19n), 255)
+  +sc = tt.from(sc0, ply)
+  se.run(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sc,
+    U32.is_eq(U32.and(data, 131071), ttm) && U32.is_ge(bnd, 2) && U32.is_ge(U32.add(ttd, 3), depth) &&
+    C.s.lt(C.s.abs(sc), C.MATE_BOUND()))
+
+def se.c?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +data) = r
+  se.d(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, data, m[U32.add(i, 2)])
+
+def se.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+          +pv: Bool, +ttm: U32, +o: Opt, +i: U32, hit: Bool) -> Array<U32> & U32:
+  match hit:
+    case True{}:
+      se.c(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[U32.add(i, 1)])
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+def se.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +lock) = r
+  se.b(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, U32.is_eq(lock, B.P.hhi(p)))
+
+def se.chk?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+            +pv: Bool, +ttm: U32, +o: Opt, cand: Bool) -> Array<U32> & U32:
+  match cand:
+    case True{}:
+      +i = tt.idx(B.P.hlo(p))
+      se.a(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[i])
+    case False{}:
+      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+def sr.moves.x?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
+                +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sx0) = r
+  se.chk(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
+    U32.is_zero(sx0) && U32.is_ge(depth, 8) && U32.is_ne(ttm, 0) && U32.is_gt(ply, 0))
+
+def sr.moves?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+              +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
+  sr.moves.x(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, m[sx.slot(ply)])
+
+# null move: the side to move passes; if a reduced search still fails
+# high, so would a real move (except in zugzwang)
+def sr.nm.c?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+             +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, +s: U32, cut: Bool) -> Array<U32> & U32:
+  match cut:
+    case True{}:
+      (m, C.sel(C.s.ge(s, C.MATE_BOUND()), beta, s))
+    case False{}:
+      sr.moves(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+
+def sr.nm.b?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +raw) = r
+  +s = C.s.neg(raw)
+  sr.nm.c(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, s, C.s.ge(s, beta))
+
+# null move: the child has no previous-move context
+def sr.nm.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
+             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & B.Pos) -> Array<U32> & U32:
+  (m, +np) = r
+  +red = U32.add(3, U32.div(depth, 6))
+  m[U32.add(B.PLYAUX(), U32.shln(U32.add(ply, 1), 2n))] <- PK_NONE()
+  sr.nm.b(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
+    search(m, np, sub0(depth, U32.add(red, 1)), C.s.neg(beta), C.s.neg(U32.sub(beta, 1)),
+      U32.add(ply, 1), False{}, False{}, o))
+
+def sr.nm?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
+           +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      sr.moves(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
+    case True{}:
+      sr.nm.a(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, B.null.make(m, p))
+
+def sr.rfp?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+            +nullok: Bool, +chk: Bool, +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, cut: Bool) ->
+  Array<U32> & U32:
+  match cut:
+    case True{}:
+      (m, ev)
+    case False{}:
+      sr.nm(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
+        Opt.null(o) && nullok && Bool.not(pv) && Bool.not(chk) && U32.is_ge(depth, 3) &&
+        C.s.ge(ev, beta) && U32.is_ge(B.P.ph(p), 3))
+
+def sr.ev.i?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+             +ttm: U32, +o: Opt, +ev: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +prev) = r
+  +imp = U32.is_ge(ply, 2) && Bool.not(chk) && U32.is_ne(prev, EV_NONE()) && C.s.gt(ev, prev)
+  m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))] <- C.b2u(imp)
+  +pv = U32.is_gt(U32.sub(beta, alpha), 1)
+  +bmate = C.s.lt(C.s.abs(beta), C.MATE_BOUND())
+  sr.rfp(m, p, depth, alpha, beta, ply, nullok, chk, ev, pv, ttm, o,
+    Opt.prune(o) && Bool.not(pv) && Bool.not(chk) && U32.is_gt(ply, 0) && U32.is_le(depth, 7) &&
+    bmate && C.s.ge(U32.sub(ev, U32.mul(75, sub0(depth, C.b2u(imp)))), beta))
+
+def sr.ev?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+           +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +ev) = r
+  m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 1))] <- C.sel(chk, EV_NONE(), ev)
+  sr.ev.i(p, depth, alpha, beta, ply, nullok, chk, ttm, o, ev,
+    m[U32.add(B.PLYAUX(), U32.add(U32.shln(C.sel(U32.is_ge(ply, 2), U32.sub(ply, 2), 127), 2n), 1))])
+
+def sr.noprobe?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+                +nullok: Bool, +chk: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
+  sr.ev(p, depth, alpha, beta, ply, nullok, chk, ttm, o, ev.corr(p, E.eval(m, p, Opt.evm(o))))
+
+def sr.tt.e?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+             +nullok: Bool, +chk: Bool, +ttm: U32, +o: Opt, +sc: U32, cut: Bool) -> Array<U32> & U32:
+  match cut:
+    case True{}:
+      (m, sc)
+    case False{}:
+      sr.noprobe(m, p, depth, alpha, beta, ply, nullok, chk, ttm, o)
+
+def sr.tt.d?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+             +o: Opt, +data: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sc0) = r
+  +ttm = U32.and(data, 131071)
+  +bnd = U32.and(U32.shrn(data, 17n), 3)
+  +ttd = U32.and(U32.shrn(data, 19n), 255)
+  +sc = tt.from(sc0, ply)
+  +pv = U32.is_gt(U32.sub(beta, alpha), 1)
+  +cut = Bool.not(pv) && U32.is_gt(ply, 0) && U32.is_ge(ttd, depth) &&
+    (U32.is_eq(bnd, 3) || (U32.is_eq(bnd, 2) && C.s.ge(sc, beta)) || (U32.is_eq(bnd, 1) && C.s.le(sc, alpha)))
+  sr.tt.e(m, p, depth, alpha, beta, ply, nullok, chk, ttm, o, sc, cut)
+
+def sr.tt.c?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+             +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +data) = r
+  sr.tt.d(p, depth, alpha, beta, ply, nullok, chk, o, data, m[U32.add(i, 2)])
+
+def sr.tt.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+             +nullok: Bool, +chk: Bool, +o: Opt, +i: U32, hit: Bool) -> Array<U32> & U32:
+  match hit:
+    case False{}:
+      sr.noprobe(m, p, depth, alpha, beta, ply, nullok, chk, 0, o)
+    case True{}:
+      sr.tt.c(p, depth, alpha, beta, ply, nullok, chk, o, i, m[U32.add(i, 1)])
+
+def sr.tt?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+           +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +lock) = r
+  sr.tt.b(m, p, depth, alpha, beta, ply, nullok, chk, o, i, U32.is_eq(lock, B.P.hhi(p)))
+
+def sr.mdp?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+            +nullok: Bool, +chk: Bool, +o: Opt, cut: Bool) -> Array<U32> & U32:
+  match cut:
+    case True{}:
+      (m, alpha)
+    case False{}:
+      +i = tt.idx(B.P.hlo(p))
+      sr.tt(p, depth, alpha, beta, ply, nullok, chk, o, i, m[i])
+
+def sr.depth?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+              +nullok: Bool, +chk: Bool, +o: Opt, leaf: Bool) -> Array<U32> & U32:
+  match leaf:
+    case True{}:
+      qsearch(m, p, alpha, beta, ply, chk, o)
+    case False{}:
+      +a2 = C.s.max(alpha, U32.add(C.s.neg(C.MATE()), ply))
+      +b2 = C.s.min(beta, U32.sub(C.MATE(), U32.add(ply, 1)))
+      sr.mdp(m, p, depth, a2, b2, ply, nullok, chk, o, C.s.ge(a2, b2))
+
+def sr.draw?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+             +o: Opt, r: Array<U32> & Bool) -> Array<U32> & U32:
+  match r:
+    case (m, True{}):
+      (m, 0)
+    case (m, False{}):
+      +d = U32.add(depth, C.b2u(chk))
+      sr.depth(m, p, d, alpha, beta, ply, nullok, chk, o,
+        U32.is_zero(d) || U32.is_ge(ply, B.MAX_PLY()))
+
+def sr.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
+          +o: Opt, r: Array<U32> & Bool) -> Array<U32> & U32:
+  match r:
+    case (m, True{}):
+      (m, 0)
+    case (m, False{}):
+      sr.draw(p, depth, alpha, beta, ply, nullok, chk, o, draw(m, p, ply))
+
+# negamax value of p searched to `depth` plies within (alpha, beta);
+# chk: is the side to move in check (computed by the caller)
+def search?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
+            +nullok: Bool, +chk: Bool, +o: Opt) -> Array<U32> & U32:
+  m[U32.add(B.PVLEN(), ply)] <- 0
+  sr.a(p, depth, alpha, beta, ply, nullok, chk, o, tick(m))
 
 def sr.re2.b?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, +quiet: Bool, +gc: Bool,
               +raw: U32, go: Bool) -> Array<U32> & U32:
@@ -1119,300 +1398,16 @@ def sr.loop.go?(m: Array<U32>, +nd: Nd, +lp: Lp, go: Bool) -> Array<U32> & U32:
 def sr.loop?(m: Array<U32>, +nd: Nd, +lp: Lp) -> Array<U32> & U32:
   sr.loop.go(m, nd, lp, U32.is_lt(Lp.i(lp), Nd.n(nd)))
 
-def sr.sx?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
-           +imp: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +sx) = r
-  m[sx.slot(ply)] <- 0
-  m = ord(m, B.P.side(p), base, 0, n, ttm, k1, k2, pk, cm)
-  sr.loop(m, Nd{p, depth, beta, ply, pv, chk, ev, base, n, alpha, o, pk, cm, U32.is_ne(imp, 0), sx},
-    Lp{alpha, U32.add(C.s.neg(C.INF()), 0), 0, 0, 0, 0, 0})
-
-def sr.imp?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, +cm: U32,
-            r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +imp) = r
-  sr.sx(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm, imp, m[sx.slot(ply)])
-
-def sr.cm?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, +pk: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +cm) = r
-  sr.imp(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, cm,
-    m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))])
-
-def sr.pk?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, +k2: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +pk0) = r
-  +pk = C.sel(U32.is_zero(ply), PK_NONE(), U32.min(pk0, 768))
-  sr.cm(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, pk, m[U32.add(CMOVE(), pk)])
-
-def sr.k2?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, +k1: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +k2) = r
-  sr.pk(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1, k2, m[U32.add(B.PLYAUX(), U32.shln(ply, 2n))])
-
-def sr.k1?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +base: U32, +n: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +k1) = r
-  sr.k2(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, base, n, k1,
-    m[U32.add(U32.add(B.KILLERS(), U32.shln(ply, 1n)), 1)])
-
-# CAS level 3 (in-tree allocation): a node with at most 3 pseudo-legal
-# moves is a forced line (cheap to resolve, often decisive): +1 ply
-def sr.gen?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +n) = r
-  +ext = C.b2u(U32.is_ge(Opt.cas(o), 3) && U32.is_le(n, 3) && U32.is_lt(ply, 40))
-  sr.k1(p, U32.add(depth, ext), alpha, beta, ply, chk, ev, pv, ttm, o, base, n,
-    m[U32.add(B.KILLERS(), U32.shln(ply, 1n))])
-
-# internal iterative reduction: without a TT move a deep node is likely
-# mis-ordered, so it is searched one ply shallower
-def sr.moves.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
-                 +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
-  +base = ply_moves(ply)
-  +d2 = C.sel(U32.is_zero(ttm) && U32.is_ge(depth, 4), U32.sub(depth, 1), depth)
-  sr.gen(p, d2, alpha, beta, ply, chk, ev, pv, ttm, o, base, G.gen(m, p, base, 0))
-
-def se.go?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-           +pv: Bool, +ttm: U32, +o: Opt, +sbeta: U32, single: Bool, mcut: Bool) -> Array<U32> & U32:
-  match single mcut:
-    case True{} _:
-      m[sx.slot(ply)] <- ttm
-      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-    case False{} True{}:
-      (m, sbeta)
-    case False{} False{}:
-      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-
-# Singular extensions: at a deep node whose TT entry (deep enough, lower or
-# exact bound) proposes ttm, search the other moves at half depth against
-# sbeta = ttsc - 2 * depth. All failing low: ttm is singular and is
-# extended by one ply. Failing high with sbeta >= beta: several moves beat
-# beta (multi-cut), answer sbeta.
-def se.res?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
-            +ttm: U32, +o: Opt, +sbeta: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  +single = C.s.lt(v, sbeta)
-  se.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta, single,
-    Bool.not(single) && C.s.ge(sbeta, beta) && Bool.not(pv))
-
-def se.run?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, +sc: U32, ok: Bool) -> Array<U32> & U32:
-  match ok:
-    case False{}:
-      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-    case True{}:
-      +sbeta = U32.sub(sc, U32.mul(depth, 2))
-      m[sx.slot(ply)] <- U32.or(ttm, 2147483648)
-      se.res(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sbeta,
-        sr.moves.go(m, p, U32.div(U32.sub(depth, 1), 2), U32.sub(sbeta, 1), sbeta, ply, chk, ev, False{}, ttm, o))
-
-def se.d?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
-          +ttm: U32, +o: Opt, +data: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +sc0) = r
-  +bnd = U32.and(U32.shrn(data, 17n), 3)
-  +ttd = U32.and(U32.shrn(data, 19n), 255)
-  +sc = tt.from(sc0, ply)
-  se.run(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, sc,
-    U32.is_eq(U32.and(data, 131071), ttm) && U32.is_ge(bnd, 2) && U32.is_ge(U32.add(ttd, 3), depth) &&
-    C.s.lt(C.s.abs(sc), C.MATE_BOUND()))
-
-def se.c?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
-          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +data) = r
-  se.d(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, data, m[U32.add(i, 2)])
-
-def se.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-          +pv: Bool, +ttm: U32, +o: Opt, +i: U32, hit: Bool) -> Array<U32> & U32:
-  match hit:
-    case True{}:
-      se.c(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[U32.add(i, 1)])
-    case False{}:
-      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-
-def se.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
-          +ttm: U32, +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +lock) = r
-  se.b(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, U32.is_eq(lock, B.P.hhi(p)))
-
-def se.chk?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-            +pv: Bool, +ttm: U32, +o: Opt, cand: Bool) -> Array<U32> & U32:
-  match cand:
-    case True{}:
-      +i = tt.idx(B.P.hlo(p))
-      se.a(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, i, m[i])
-    case False{}:
-      sr.moves.go(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-
-def sr.moves.x?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +pv: Bool,
-                +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +sx0) = r
-  se.chk(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
-    U32.is_zero(sx0) && U32.is_ge(depth, 8) && U32.is_ne(ttm, 0) && U32.is_gt(ply, 0))
-
-def sr.moves?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
-              +ev: U32, +pv: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
-  sr.moves.x(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, m[sx.slot(ply)])
-
-def sr.nm?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
-           +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      sr.moves(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-    case True{}:
-      sr.nm.a(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, B.null.make(m, p))
-
-def sr.rfp?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-            +nullok: Bool, +chk: Bool, +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, cut: Bool) ->
+def sr.cut?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +s: U32, +quiet: Bool, cut: Bool) ->
   Array<U32> & U32:
   match cut:
-    case True{}:
-      (m, ev)
     case False{}:
-      sr.nm(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
-        Opt.null(o) && nullok && Bool.not(pv) && Bool.not(chk) && U32.is_ge(depth, 3) &&
-        C.s.ge(ev, beta) && U32.is_ge(B.P.ph(p), 3))
-
-def sr.ev.i?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-             +ttm: U32, +o: Opt, +ev: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +prev) = r
-  +imp = U32.is_ge(ply, 2) && Bool.not(chk) && U32.is_ne(prev, EV_NONE()) && C.s.gt(ev, prev)
-  m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 2))] <- C.b2u(imp)
-  +pv = U32.is_gt(U32.sub(beta, alpha), 1)
-  +bmate = C.s.lt(C.s.abs(beta), C.MATE_BOUND())
-  sr.rfp(m, p, depth, alpha, beta, ply, nullok, chk, ev, pv, ttm, o,
-    Opt.prune(o) && Bool.not(pv) && Bool.not(chk) && U32.is_gt(ply, 0) && U32.is_le(depth, 7) &&
-    bmate && C.s.ge(U32.sub(ev, U32.mul(75, sub0(depth, C.b2u(imp)))), beta))
-
-def sr.ev?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-           +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +ev) = r
-  m[U32.add(B.PLYAUX(), U32.add(U32.shln(ply, 2n), 1))] <- C.sel(chk, EV_NONE(), ev)
-  sr.ev.i(p, depth, alpha, beta, ply, nullok, chk, ttm, o, ev,
-    m[U32.add(B.PLYAUX(), U32.add(U32.shln(C.sel(U32.is_ge(ply, 2), U32.sub(ply, 2), 127), 2n), 1))])
-
-def sr.noprobe?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-                +nullok: Bool, +chk: Bool, +ttm: U32, +o: Opt) -> Array<U32> & U32:
-  sr.ev(p, depth, alpha, beta, ply, nullok, chk, ttm, o, ev.corr(p, E.eval(m, p, Opt.evm(o))))
-
-def sr.tt.e?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-             +nullok: Bool, +chk: Bool, +ttm: U32, +o: Opt, +sc: U32, cut: Bool) -> Array<U32> & U32:
-  match cut:
+      sr.loop(m, nd, lp)
     case True{}:
-      (m, sc)
-    case False{}:
-      sr.noprobe(m, p, depth, alpha, beta, ply, nullok, chk, ttm, o)
-
-def sr.tt.d?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-             +o: Opt, +data: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +sc0) = r
-  +ttm = U32.and(data, 131071)
-  +bnd = U32.and(U32.shrn(data, 17n), 3)
-  +ttd = U32.and(U32.shrn(data, 19n), 255)
-  +sc = tt.from(sc0, ply)
-  +pv = U32.is_gt(U32.sub(beta, alpha), 1)
-  +cut = Bool.not(pv) && U32.is_gt(ply, 0) && U32.is_ge(ttd, depth) &&
-    (U32.is_eq(bnd, 3) || (U32.is_eq(bnd, 2) && C.s.ge(sc, beta)) || (U32.is_eq(bnd, 1) && C.s.le(sc, alpha)))
-  sr.tt.e(m, p, depth, alpha, beta, ply, nullok, chk, ttm, o, sc, cut)
-
-def sr.tt.c?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-             +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +data) = r
-  sr.tt.d(p, depth, alpha, beta, ply, nullok, chk, o, data, m[U32.add(i, 2)])
-
-def sr.tt.b?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-             +nullok: Bool, +chk: Bool, +o: Opt, +i: U32, hit: Bool) -> Array<U32> & U32:
-  match hit:
-    case False{}:
-      sr.noprobe(m, p, depth, alpha, beta, ply, nullok, chk, 0, o)
-    case True{}:
-      sr.tt.c(p, depth, alpha, beta, ply, nullok, chk, o, i, m[U32.add(i, 1)])
-
-def sr.tt?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-           +o: Opt, +i: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +lock) = r
-  sr.tt.b(m, p, depth, alpha, beta, ply, nullok, chk, o, i, U32.is_eq(lock, B.P.hhi(p)))
-
-def sr.mdp?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-            +nullok: Bool, +chk: Bool, +o: Opt, cut: Bool) -> Array<U32> & U32:
-  match cut:
-    case True{}:
-      (m, alpha)
-    case False{}:
-      +i = tt.idx(B.P.hlo(p))
-      sr.tt(p, depth, alpha, beta, ply, nullok, chk, o, i, m[i])
-
-def sr.depth?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-              +nullok: Bool, +chk: Bool, +o: Opt, leaf: Bool) -> Array<U32> & U32:
-  match leaf:
-    case True{}:
-      qsearch(m, p, alpha, beta, ply, chk, o)
-    case False{}:
-      +a2 = C.s.max(alpha, U32.add(C.s.neg(C.MATE()), ply))
-      +b2 = C.s.min(beta, U32.sub(C.MATE(), U32.add(ply, 1)))
-      sr.mdp(m, p, depth, a2, b2, ply, nullok, chk, o, C.s.ge(a2, b2))
-
-def sr.draw?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-             +o: Opt, r: Array<U32> & Bool) -> Array<U32> & U32:
-  match r:
-    case (m, True{}):
-      (m, 0)
-    case (m, False{}):
-      +d = U32.add(depth, C.b2u(chk))
-      sr.depth(m, p, d, alpha, beta, ply, nullok, chk, o,
-        U32.is_zero(d) || U32.is_ge(ply, B.MAX_PLY()))
-
-def sr.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
-          +o: Opt, r: Array<U32> & Bool) -> Array<U32> & U32:
-  match r:
-    case (m, True{}):
-      (m, 0)
-    case (m, False{}):
-      sr.draw(p, depth, alpha, beta, ply, nullok, chk, o, draw(m, p, ply))
-
-# negamax value of p searched to `depth` plies within (alpha, beta);
-# chk: is the side to move in check (computed by the caller)
-def search?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32,
-            +nullok: Bool, +chk: Bool, +o: Opt) -> Array<U32> & U32:
-  m[U32.add(B.PVLEN(), ply)] <- 0
-  sr.a(p, depth, alpha, beta, ply, nullok, chk, o, tick(m))
-
-# null move: the side to move passes; if a reduced search still fails
-# high, so would a real move (except in zugzwang)
-def sr.nm.c?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool,
-             +ev: U32, +pv: Bool, +ttm: U32, +o: Opt, +s: U32, cut: Bool) -> Array<U32> & U32:
-  match cut:
-    case True{}:
-      (m, C.sel(C.s.ge(s, C.MATE_BOUND()), beta, s))
-    case False{}:
-      sr.moves(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o)
-
-def sr.nm.b?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +raw) = r
-  +s = C.s.neg(raw)
-  sr.nm.c(m, p, depth, alpha, beta, ply, chk, ev, pv, ttm, o, s, C.s.ge(s, beta))
-
-# null move: the child has no previous-move context
-def sr.nm.a?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-             +pv: Bool, +ttm: U32, +o: Opt, r: Array<U32> & B.Pos) -> Array<U32> & U32:
-  (m, +np) = r
-  +red = U32.add(3, U32.div(depth, 6))
-  m[U32.add(B.PLYAUX(), U32.shln(U32.add(ply, 1), 2n))] <- PK_NONE()
-  sr.nm.b(p, depth, alpha, beta, ply, chk, ev, pv, ttm, o,
-    search(m, np, sub0(depth, U32.add(red, 1)), C.s.neg(beta), C.s.neg(U32.sub(beta, 1)),
-      U32.add(ply, 1), False{}, False{}, o))
-
-# Table maintenance
-# -----------------
-
-def fill?(m: Array<U32>, +i: U32, +end: U32, +v: U32) -> Array<U32>:
-  fill.go(m, i, end, v, U32.is_lt(i, end))
+      m = good_quiet.if(m, B.P.side(Nd.p(nd)), Nd.ply(nd), Nd.depth(nd), mv, Nd.pk(nd), Lp.nq(lp), quiet)
+      m = corr.if(m, Nd.p(nd), Nd.depth(nd), U32.sub(s, Nd.ev(nd)),
+        quiet && Bool.not(Nd.chk(nd)) && C.s.gt(s, Nd.ev(nd)) && C.s.lt(C.s.abs(s), C.MATE_BOUND()) && Nd.real(nd))
+      (tt.store.if(m, Nd.p(nd), Nd.ply(nd), Nd.depth(nd), 2, s, mv, Nd.real(nd)), s)
 
 def fill.go?(m: Array<U32>, +i: U32, +end: U32, +v: U32, go: Bool) -> Array<U32>:
   match go:
@@ -1422,12 +1417,11 @@ def fill.go?(m: Array<U32>, +i: U32, +end: U32, +v: U32, go: Bool) -> Array<U32>
       m[i] <- v
       fill(m, U32.add(i, 1), end, v)
 
-def halve.go?(m: Array<U32>, +i: U32, +end: U32, go: Bool) -> Array<U32>:
-  match go:
-    case False{}:
-      m
-    case True{}:
-      halve.b(i, end, m[i])
+# Table maintenance
+# -----------------
+
+def fill?(m: Array<U32>, +i: U32, +end: U32, +v: U32) -> Array<U32>:
+  fill.go(m, i, end, v, U32.is_lt(i, end))
 
 def halve?(m: Array<U32>, +i: U32, +end: U32) -> Array<U32>:
   halve.go(m, i, end, U32.is_lt(i, end))
@@ -1436,6 +1430,13 @@ def halve.b?(+i: U32, +end: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +v) = r
   m[i] <- C.s.shr(v, 1n)
   halve(m, U32.add(i, 1), end)
+
+def halve.go?(m: Array<U32>, +i: U32, +end: U32, go: Bool) -> Array<U32>:
+  match go:
+    case False{}:
+      m
+    case True{}:
+      halve.b(i, end, m[i])
 
 # before a search: new TT generation, age the histories, clear killers
 def prep.b(r: Array<U32> & U32) -> Array<U32>:
@@ -1457,20 +1458,25 @@ def clear(m: Array<U32>) -> Array<U32>:
 
 def Opt.th(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, _, _, _, _, th}:
+    case Opt{_, _, _, _, _, _, _, _, th, _}:
       th
 
 def Opt.tp(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, _, _, _, tp, _}:
+    case Opt{_, _, _, _, _, _, _, tp, _, _}:
       tp
 
 def Opt.ss(+o: Opt) -> U32:
   match o:
-    case Opt{_, _, _, _, _, _, ss, _, _}:
+    case Opt{_, _, _, _, _, _, ss, _, _, _}:
       ss
 
 def Nd.cm(+x: Nd) -> U32:
   match x:
     case Nd{_, _, _, _, _, _, _, _, _, _, _, _, cm, _, _}:
       cm
+
+def Opt.pr(+o: Opt) -> U32:
+  match o:
+    case Opt{_, _, _, _, _, _, _, _, _, pr}:
+      pr
