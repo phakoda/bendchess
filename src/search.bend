@@ -719,13 +719,13 @@ def PK_NONE() -> U32:
   768
 
 def qs.gen?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32, +best: U32,
-            +base: U32, +o: Opt, r: Array<U32> & U32) -> Array<U32> & U32:
+            +base: U32, +o: Opt, +ttm: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
-  m = ord(m, B.P.side(p), base, 0, n, 0, 0, 0, PK_NONE(), 0)
+  m = ord(m, B.P.side(p), base, 0, n, ttm, 0, 0, PK_NONE(), 0)
   qs.loop(m, Nd{p, 0, beta, ply, False{}, chk, ev, base, n, alpha, o, 768, 0, False{}}, Lp{alpha, best, 0, 0, 0, 0, 0})
 
 def qs.stand?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +ev: U32,
-              +o: Opt, cut: Bool) -> Array<U32> & U32:
+              +o: Opt, +ttm: U32, cut: Bool) -> Array<U32> & U32:
   match cut:
     case True{}:
       (m, ev)
@@ -733,13 +733,13 @@ def qs.stand?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk
       +stand = Bool.not(chk)
       +base = ply_moves(ply)
       qs.gen(p, C.sel(stand, C.s.max(alpha, ev), alpha), beta, ply, chk, ev,
-        C.sel(stand, ev, U32.add(C.s.neg(C.MATE()), ply)), base, o,
+        C.sel(stand, ev, U32.add(C.s.neg(C.MATE()), ply)), base, o, ttm,
         G.gen(m, p, base, C.sel(chk, 0, 1)))
 
-def qs.ev?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt,
+def qs.ev?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt, +ttm: U32,
            r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +ev) = r
-  qs.stand(m, p, alpha, beta, ply, chk, ev, o, Bool.not(chk) && C.s.ge(ev, beta))
+  qs.stand(m, p, alpha, beta, ply, chk, ev, o, ttm, Bool.not(chk) && C.s.ge(ev, beta))
 
 def qs.deep?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt,
              deep: Bool) -> Array<U32> & U32:
@@ -747,7 +747,8 @@ def qs.deep?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk:
     case True{}:
       E.eval(m, p, Opt.evm(o))
     case False{}:
-      qs.ev(p, alpha, beta, ply, chk, o, E.eval.lazy(m, p, Opt.evm(o), alpha, beta))
+      +i = tt.idx(B.P.hlo(p))
+      qs.tt(p, alpha, beta, ply, chk, o, i, m[i])
 
 def qs.a?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt,
           r: Array<U32> & Bool) -> Array<U32> & U32:
@@ -1258,3 +1259,40 @@ def seld.up?(+ply: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +sd) = r
   m[SELD()] <- U32.max(sd, ply)
   m
+
+# quiescence TT probe: any stored entry is deep enough; at non-PV nodes a
+# usable bound answers directly, otherwise the TT move is tried first
+def qs.tt.e?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt,
+             +ttm: U32, +sc: U32, cut: Bool) -> Array<U32> & U32:
+  match cut:
+    case True{}:
+      (m, sc)
+    case False{}:
+      qs.ev(p, alpha, beta, ply, chk, o, ttm, E.eval.lazy(m, p, Opt.evm(o), alpha, beta))
+
+def qs.tt.d?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt, +data: U32,
+             r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +sc0) = r
+  +bnd = U32.and(U32.shrn(data, 17n), 3)
+  +sc = tt.from(sc0, ply)
+  +cut = U32.is_eq(U32.sub(beta, alpha), 1) &&
+    (U32.is_eq(bnd, 3) || (U32.is_eq(bnd, 2) && C.s.ge(sc, beta)) || (U32.is_eq(bnd, 1) && C.s.le(sc, alpha)))
+  qs.tt.e(m, p, alpha, beta, ply, chk, o, U32.and(data, 131071), sc, cut)
+
+def qs.tt.c?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt, +i: U32,
+             r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +data) = r
+  qs.tt.d(p, alpha, beta, ply, chk, o, data, m[U32.add(i, 2)])
+
+def qs.tt.b?(m: Array<U32>, +p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt, +i: U32,
+             hit: Bool) -> Array<U32> & U32:
+  match hit:
+    case False{}:
+      qs.ev(p, alpha, beta, ply, chk, o, 0, E.eval.lazy(m, p, Opt.evm(o), alpha, beta))
+    case True{}:
+      qs.tt.c(p, alpha, beta, ply, chk, o, i, m[U32.add(i, 1)])
+
+def qs.tt?(+p: B.Pos, +alpha: U32, +beta: U32, +ply: U32, +chk: Bool, +o: Opt, +i: U32,
+           r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +lock) = r
+  qs.tt.b(m, p, alpha, beta, ply, chk, o, i, U32.is_eq(lock, B.P.hhi(p)))
