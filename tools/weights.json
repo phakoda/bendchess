@@ -1,0 +1,11 @@
+{
+ "_comment": "Hand-set initial evaluation weights (centipawns), [mg, eg] per feature. Feature values are white-minus-black counts computed by src/eval.bend. Regenerate src/weights.bend with tools/gen_weights.py; tools/tune.py rewrites this file.",
+ "features": [
+  ["passed_r1", 0, 5], ["passed_r2", 0, 10], ["passed_r3", 5, 15], ["passed_r4", 15, 30],
+  ["passed_r5", 30, 60], ["passed_r6", 50, 100],
+  ["isolated", -10, -12], ["doubled", -8, -18], ["bishop_pair", 30, 50],
+  ["rook_open", 25, 8], ["rook_semiopen", 12, 6], ["rook_7th", 10, 20],
+  ["mob_knight", 4, 4], ["mob_bishop", 5, 5], ["mob_rook", 2, 4], ["mob_queen", 1, 2],
+  ["king_attack", 1, 0], ["pawn_shield", 10, 0]
+ ]
+}

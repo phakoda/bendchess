@@ -3,6 +3,7 @@
 import Base
 import ./core.bend as C
 import ./board.bend as B
+import ./movegen.bend as G
 import ./uci.bend as U
 import ./search.bend as S
 
@@ -26,10 +27,10 @@ def fen.or_start(xs: List<&2, String>) -> String:
 
 def perft.top.b(+depth: U32, r: Array<U32> & B.Pos) -> Array<U32> & U32:
   (m, +p) = r
-  B.perft(m, p, depth, 0)
+  G.perft(m, p, depth, 0)
 
 def perft.top(+depth: U32, fen: String) -> Array<U32> & U32:
-  perft.top.b(depth, B.fen.parse(B.mem.new(), fen))
+  perft.top.b(depth, G.fen.parse(B.mem.new(), fen))
 
 def perft.show(+t0: Nat, +t1: Nat, r: Array<U32> & U32) -> IO(Unit):
   (m, +n) = r
@@ -50,10 +51,10 @@ def divide.top.c(r: Array<U32> & String) -> String:
 
 def divide.top.b(+depth: U32, r: Array<U32> & B.Pos) -> String:
   (m, +p) = r
-  divide.top.c(B.divide(m, p, depth))
+  divide.top.c(G.divide(m, p, depth))
 
 def cmd.divide(+depth: U32, fen: String) -> IO(Unit):
-  IO.print(divide.top.b(depth, B.fen.parse(B.mem.new(), fen)))
+  IO.print(divide.top.b(depth, G.fen.parse(B.mem.new(), fen)))
 
 def fen.rt.c(r: Array<U32> & String) -> String:
   (m, s) = r
@@ -62,10 +63,10 @@ def fen.rt.c(r: Array<U32> & String) -> String:
 # fen round trip: parse, print back
 def fen.rt.b(r: Array<U32> & B.Pos) -> String:
   (m, +p) = r
-  fen.rt.c(B.fen.out(m, p))
+  fen.rt.c(G.fen.out(m, p))
 
 def cmd.fen(fen: String) -> IO(Unit):
-  IO.print(fen.rt.b(B.fen.parse(B.mem.new(), fen)))
+  IO.print(fen.rt.b(G.fen.parse(B.mem.new(), fen)))
 
 def cmd.depth.go(perft: Bool, +d: U32, fen: String) -> IO(Unit):
   match perft:
@@ -109,10 +110,6 @@ def bench.fens() -> List<&2, String>:
    "r1b1k2r/ppppnppp/2n2q2/2b5/3NP3/2P1B3/PP3PPP/RN1QKB1R w KQkq - 0 1",
    "4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19"]
 
-def bench.one.e?(+d: U32, +tot: U32, rest: List<&2, String>, +t0: Nat, r: Array<U32> & U32) -> IO(Unit):
-  (m, +left) = r
-  bench.go(m, d, U32.add(tot, U32.sub(4000000000, left)), rest, t0)
-
 def bench.one.d?(+d: U32, +tot: U32, rest: List<&2, String>, +t0: Nat, m: Array<U32>) -> IO(Unit):
   bench.one.e(d, tot, rest, t0, m[B.SC()])
 
@@ -136,7 +133,11 @@ def bench.go?(m: Array<U32>, +d: U32, +tot: U32, fens: List<&2, String>, +t0: Na
     case Nil{}:
       IO.bind(Nat, Unit, IO.now(), t1 => bench.fin(tot, t0, t1))
     case Con{f, rest}:
-      bench.one.b(d, tot, rest, t0, B.fen.parse(m, f))
+      bench.one.b(d, tot, rest, t0, G.fen.parse(m, f))
+
+def bench.one.e?(+d: U32, +tot: U32, rest: List<&2, String>, +t0: Nat, r: Array<U32> & U32) -> IO(Unit):
+  (m, +left) = r
+  bench.go(m, d, U32.add(tot, U32.sub(4000000000, left)), rest, t0)
 
 def cmd.bench(+d: U32) -> IO(Unit):
   IO.bind(Nat, Unit, IO.now(), t0 => bench.go(B.mem.new(), d, 0, bench.fens(), t0))

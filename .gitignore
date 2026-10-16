@@ -4,3 +4,4 @@ tools/bin/
 __pycache__/
 *.pyc
 results/tmp/
+data/

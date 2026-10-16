@@ -1753,4 +1753,3 @@ def debruijn(n: Nat) -> U32:
       9
     case _:
       0
-

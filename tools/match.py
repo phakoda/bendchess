@@ -33,7 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import openings  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BEND = os.path.join(ROOT, "build", "bendchess")
+BEND = os.environ.get("BEND", os.path.join(ROOT, "build", "bendchess"))
 STOCKFISH = os.environ.get("STOCKFISH", "/usr/games/stockfish")
 
 
@@ -121,6 +121,9 @@ def play_game(args, spec_a, spec_b, fen, opening, a_white, game_no):
             t0 = time.time()
             res = eng.play(board, lim, info=chess.engine.INFO_BASIC | chess.engine.INFO_SCORE)
             el = time.time() - t0
+            if args.nodeclock:
+                # node clock: charge nodes / K virtual milliseconds
+                el = res.info.get("nodes", 0) / args.nodeclock / 1000.0
             if args.tc:
                 clocks[board.turn] -= el
                 if clocks[board.turn] < -args.margin:
@@ -194,6 +197,8 @@ def main():
     ap.add_argument("--movetime2", type=int, default=0)
     ap.add_argument("--tc", default="")
     ap.add_argument("--margin", type=float, default=0.5, help="clock overrun tolerance (s)")
+    ap.add_argument("--nodeclock", type=int, default=0,
+                    help="charge clocks by nodes/K virtual ms (engines must run with NodesTime=K)")
     ap.add_argument("--concurrency", type=int, default=2)
     ap.add_argument("--maxplies", type=int, default=400)
     ap.add_argument("--seed", type=int, default=1)

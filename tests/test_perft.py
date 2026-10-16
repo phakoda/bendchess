@@ -80,9 +80,9 @@ def ref_perft(board, depth):
 
 
 def norm_fen(board):
-    """FEN as our engine prints it: ep square whenever a double push just
-    happened (python-chess's 'fen(en_passant="fen")')."""
-    return board.fen(en_passant="fen")
+    """FEN as our engine prints it: the ep square only when a pseudo-legal
+    en passant capture exists (python-chess's en_passant="xfen")."""
+    return board.fen(en_passant="xfen")
 
 
 def main():
