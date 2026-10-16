@@ -1551,3 +1551,206 @@ def pst_eg(n: Nat) -> U32:
       4294967253
     case _:
       0
+
+def delta(n: Nat) -> U32:
+  match n:
+    case 0n:
+      3848
+    case 7n:
+      4112
+    case 14n:
+      4360
+    case 17n:
+      3848
+    case 23n:
+      4112
+    case 29n:
+      4360
+    case 34n:
+      3848
+    case 39n:
+      4112
+    case 44n:
+      4360
+    case 51n:
+      3848
+    case 55n:
+      4112
+    case 59n:
+      4360
+    case 68n:
+      3848
+    case 71n:
+      4112
+    case 74n:
+      4360
+    case 85n:
+      3848
+    case 86n:
+      4
+    case 87n:
+      4112
+    case 88n:
+      4
+    case 89n:
+      4360
+    case 101n:
+      4
+    case 102n:
+      3882
+    case 103n:
+      4144
+    case 104n:
+      4394
+    case 105n:
+      4
+    case 112n:
+      7952
+    case 113n:
+      7952
+    case 114n:
+      7952
+    case 115n:
+      7952
+    case 116n:
+      7952
+    case 117n:
+      7952
+    case 118n:
+      7984
+    case 120n:
+      8496
+    case 121n:
+      8464
+    case 122n:
+      8464
+    case 123n:
+      8464
+    case 124n:
+      8464
+    case 125n:
+      8464
+    case 126n:
+      8464
+    case 133n:
+      4
+    case 134n:
+      12073
+    case 135n:
+      12336
+    case 136n:
+      12585
+    case 137n:
+      4
+    case 149n:
+      12040
+    case 150n:
+      4
+    case 151n:
+      12304
+    case 152n:
+      4
+    case 153n:
+      12552
+    case 164n:
+      12040
+    case 167n:
+      12304
+    case 170n:
+      12552
+    case 179n:
+      12040
+    case 183n:
+      12304
+    case 187n:
+      12552
+    case 194n:
+      12040
+    case 199n:
+      12304
+    case 204n:
+      12552
+    case 209n:
+      12040
+    case 215n:
+      12304
+    case 221n:
+      12552
+    case 224n:
+      12040
+    case 231n:
+      12304
+    case 238n:
+      12552
+    case _:
+      0
+
+def debruijn(n: Nat) -> U32:
+  match n:
+    case 0n:
+      0
+    case 1n:
+      1
+    case 2n:
+      28
+    case 3n:
+      2
+    case 4n:
+      29
+    case 5n:
+      14
+    case 6n:
+      24
+    case 7n:
+      3
+    case 8n:
+      30
+    case 9n:
+      22
+    case 10n:
+      20
+    case 11n:
+      15
+    case 12n:
+      25
+    case 13n:
+      17
+    case 14n:
+      4
+    case 15n:
+      8
+    case 16n:
+      31
+    case 17n:
+      27
+    case 18n:
+      13
+    case 19n:
+      23
+    case 20n:
+      21
+    case 21n:
+      19
+    case 22n:
+      16
+    case 23n:
+      7
+    case 24n:
+      26
+    case 25n:
+      12
+    case 26n:
+      18
+    case 27n:
+      6
+    case 28n:
+      11
+    case 29n:
+      5
+    case 30n:
+      10
+    case 31n:
+      9
+    case _:
+      0
+

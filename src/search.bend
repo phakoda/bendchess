@@ -558,7 +558,7 @@ def qs.delta?(m: Array<U32>, +nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, futile: Boo
     case True{}:
       qs.loop(B.unmake(m, np, mv), nd, Lp.pruned(lp))
     case False{}:
-      qs.child(nd, lp, mv, np, B.in_check(m, np))
+      qs.child(nd, lp, mv, np, B.gchk(m, np, mv))
 
 def qs.legal?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, r: Array<U32> & Bool) -> Array<U32> & U32:
   match r:
@@ -571,7 +571,7 @@ def qs.legal?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, r: Array<U32> & Bool) -> A
 
 def qs.made?(+nd: Nd, +lp: Lp, +mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & U32:
   (m, +np) = r
-  qs.legal(nd, lp, mv, np, B.left_in_check(m, np))
+  qs.legal(nd, lp, mv, np, B.illegal(m, np, mv, Nd.chk(nd)))
 
 def qs.picked?(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +mvk) = r
@@ -891,11 +891,11 @@ def sr.legal?(+nd: Nd, +lp: Lp, +mv: U32, +np: B.Pos, r: Array<U32> & Bool) -> A
     case (m, True{}):
       sr.loop(B.unmake(m, np, mv), nd, Lp.skip(lp))
     case (m, False{}):
-      sr.gc(nd, lp, mv, np, B.in_check(m, np))
+      sr.gc(nd, lp, mv, np, B.gchk(m, np, mv))
 
 def sr.made?(+nd: Nd, +lp: Lp, +mv: U32, r: Array<U32> & B.Pos) -> Array<U32> & U32:
   (m, +np) = r
-  sr.legal(nd, lp, mv, np, B.left_in_check(m, np))
+  sr.legal(nd, lp, mv, np, B.illegal(m, np, mv, Nd.chk(nd)))
 
 def sr.picked?(+nd: Nd, +lp: Lp, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +mvk) = r

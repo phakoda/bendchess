@@ -132,6 +132,40 @@ def table(name: str, vals, mats) -> str:
     return "\n".join(out)
 
 
+def delta_table() -> str:
+    """0x88 delta table, index = (to - from) + 119.
+    bits 0..7: 1 white pawn attacks along it, 2 black pawn, 4 knight,
+    8 diagonal line (bishop/queen), 16 orthogonal line (rook/queen),
+    32 king (adjacent); bits 8..15: unit step + 32 (lines only)."""
+    info = [0] * 239
+    for d, b in ((15, 1), (17, 1), (-15, 2), (-17, 2)):
+        info[d + 119] |= b
+    for d in (33, 31, 18, 14, -33, -31, -18, -14):
+        info[d + 119] |= 4
+    for step, bit in ((17, 8), (15, 8), (-17, 8), (-15, 8), (16, 16), (-16, 16), (1, 16), (-1, 16)):
+        info[step + 119] |= 32
+        for k in range(1, 8):
+            info[step * k + 119] |= bit | ((step + 32) << 8)
+    out = ["def delta(n: Nat) -> U32:", "  match n:"]
+    for i, v in enumerate(info):
+        if v:
+            out += [f"    case {i}n:", f"      {v}"]
+    out += ["    case _:", "      0", ""]
+    return "\n".join(out)
+
+
+def debruijn_table() -> str:
+    """index ((x & -x) * 0x077CB531) >> 27 -> trailing-zero count of x."""
+    tab = [0] * 32
+    for i in range(32):
+        tab[(((1 << i) * 0x077CB531) & 0xFFFFFFFF) >> 27] = i
+    out = ["def debruijn(n: Nat) -> U32:", "  match n:"]
+    for i, v in enumerate(tab):
+        out += [f"    case {i}n:", f"      {v}"]
+    out += ["    case _:", "      0", ""]
+    return "\n".join(out)
+
+
 def main() -> None:
     here = os.path.dirname(os.path.abspath(__file__))
     dst = os.path.join(here, "..", "src", "tables.bend")
@@ -146,6 +180,8 @@ def main() -> None:
         f.write(hdr)
         f.write(table("pst_mg", MG, MG_VAL) + "\n")
         f.write(table("pst_eg", EG, EG_VAL) + "\n")
+        f.write(delta_table() + "\n")
+        f.write(debruijn_table() + "\n")
     print("wrote", os.path.normpath(dst))
 
 
