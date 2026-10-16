@@ -401,6 +401,11 @@ def att.w2(k: Nat) -> U32:
     case _:
       att.w1(k)
 
+def att.ray.c?(+t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, ok: Bool,
+               r: Array<U32> & U32) -> Array<U32> & Bool:
+  (m, +v) = r
+  att.ray.d(m, t, d, w1, w2, len, v, ok, U32.is_zero(v))
+
 def att.ray?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32) ->
   Array<U32> & Bool:
   att.ray.c(t, d, w1, w2, len, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
@@ -415,11 +420,6 @@ def att.ray.d?(m: Array<U32>, +t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, +
       (m, U32.is_eq(v, w1) || U32.is_eq(v, w2))
     case True{} True{}:
       att.ray(m, U32.add(t, d), d, w1, w2, U32.sub(len, 1))
-
-def att.ray.c?(+t: U32, +d: U32, +w1: U32, +w2: U32, +len: U32, ok: Bool,
-               r: Array<U32> & U32) -> Array<U32> & Bool:
-  (m, +v) = r
-  att.ray.d(m, t, d, w1, w2, len, v, ok, U32.is_zero(v))
 
 def att.seq.r?(+sq: U32, +by: U32, +k: U32, r: Array<U32> & Bool) -> Array<U32> & Bool:
   match r:
@@ -504,15 +504,6 @@ def push(m: Array<U32>, +base: U32, +n: U32, +mv: U32, keep: Bool) -> Array<U32>
     case False{}:
       (m, n)
 
-def gen.walk?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
-              +d: U32, +len: U32, +n: U32) -> Array<U32> & U32:
-  gen.walk.c(us, base, qs, from, t, d, len, n, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
-
-def gen.walk.e?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
-                r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +n) = r
-  gen.walk(m, us, base, qs, from, U32.add(t, d), d, U32.sub(len, 1), n)
-
 # walking from `from` along d, now at t with `len` steps left
 def gen.walk.d?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
                 +d: U32, +len: U32, +n: U32, +v: U32, ok: Bool, empty: Bool) ->
@@ -529,6 +520,15 @@ def gen.walk.c?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +l
                 +n: U32, ok: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
   gen.walk.d(m, us, base, qs, from, t, d, len, n, v, ok, U32.is_zero(v))
+
+def gen.walk?(m: Array<U32>, +us: U32, +base: U32, +qs: U32, +from: U32, +t: U32,
+              +d: U32, +len: U32, +n: U32) -> Array<U32> & U32:
+  gen.walk.c(us, base, qs, from, t, d, len, n, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
+
+def gen.walk.e?(+us: U32, +base: U32, +qs: U32, +from: U32, +t: U32, +d: U32, +len: U32,
+                r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +n) = r
+  gen.walk(m, us, base, qs, from, U32.add(t, d), d, U32.sub(len, 1), n)
 
 def gen.dirs.k?(+us: U32, +base: U32, +qs: U32, +from: U32, +di: U32, +de: U32, +len: U32,
                 r: Array<U32> & U32) -> Array<U32> & U32:
@@ -653,6 +653,14 @@ def gen.piece?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32
     case True{}:
       gen.type(m, us, ep, base, qs, sq, n, U32.to_nat(C.pc.type(v)))
 
+def gen.pc?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
+            r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  +s1 = U32.add(sq, 1)
+  +nx = U32.add(s1, U32.and(s1, 8))
+  gen.next(us, ep, base, qs, nx, gen.piece(m, us, ep, base, qs, sq, n, v,
+    U32.is_ne(v, 0) && U32.is_eq(C.pc.color(v), us)))
+
 def gen.sq?(m: Array<U32>, +us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
             go: Bool) -> Array<U32> & U32:
   match go:
@@ -665,14 +673,6 @@ def gen.next?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, r: Array<U32> 
   Array<U32> & U32:
   (m, +n) = r
   gen.sq(m, us, ep, base, qs, sq, n, U32.is_lt(sq, 128))
-
-def gen.pc?(+us: U32, +ep: U32, +base: U32, +qs: U32, +sq: U32, +n: U32,
-            r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  +s1 = U32.add(sq, 1)
-  +nx = U32.add(s1, U32.and(s1, 8))
-  gen.next(us, ep, base, qs, nx, gen.piece(m, us, ep, base, qs, sq, n, v,
-    U32.is_ne(v, 0) && U32.is_eq(C.pc.color(v), us)))
 
 # Check chains: small combinators threading (memory, ok) pairs.
 
@@ -1036,6 +1036,18 @@ def fen.gap.go(+e: U32, z: Bool) -> String:
 def fen.gap(+e: U32) -> String:
   fen.gap.go(e, U32.is_zero(e))
 
+def fen.row.v?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, +v: U32, empty: Bool) ->
+  Array<U32> & String:
+  match empty:
+    case True{}:
+      fen.rows(m, U32.add(f, 1), r, U32.add(e, 1), acc)
+    case False{}:
+      fen.rows(m, U32.add(f, 1), r, 0, acc ++ fen.gap(e) ++ fen.pchar(U32.to_nat(v)))
+
+def fen.row.k?(+f: U32, +r: U32, +e: U32, acc: String, r2: Array<U32> & U32) -> Array<U32> & String:
+  (m, +v) = r2
+  fen.row.v(m, f, r, e, acc, v, U32.is_zero(v))
+
 def fen.rows.go?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, inrow: Bool, last: Bool) ->
   Array<U32> & String:
   match inrow last:
@@ -1048,18 +1060,6 @@ def fen.rows.go?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, inrow: B
 
 def fen.rows?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String) -> Array<U32> & String:
   fen.rows.go(m, f, r, e, acc, U32.is_lt(f, 8), U32.is_zero(r))
-
-def fen.row.v?(m: Array<U32>, +f: U32, +r: U32, +e: U32, acc: String, +v: U32, empty: Bool) ->
-  Array<U32> & String:
-  match empty:
-    case True{}:
-      fen.rows(m, U32.add(f, 1), r, U32.add(e, 1), acc)
-    case False{}:
-      fen.rows(m, U32.add(f, 1), r, 0, acc ++ fen.gap(e) ++ fen.pchar(U32.to_nat(v)))
-
-def fen.row.k?(+f: U32, +r: U32, +e: U32, acc: String, r2: Array<U32> & U32) -> Array<U32> & String:
-  (m, +v) = r2
-  fen.row.v(m, f, r, e, acc, v, U32.is_zero(v))
 
 def fen.cflag.go(s: String, on: Bool) -> String:
   match on:
@@ -1139,17 +1139,6 @@ def legal.a(+mv: U32, r: Array<U32> & Pos) -> Array<U32> & Bool:
 def is_legal(m: Array<U32>, +p: Pos, +mv: U32) -> Array<U32> & Bool:
   legal.a(mv, make(m, p, mv))
 
-def find.go.b?(m: Array<U32>, +p: Pos, +k: U32, +base: U32, +i: U32, +n: U32, go: Bool) ->
-  Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, 0)
-    case True{}:
-      find.v(p, k, base, i, n, m[U32.add(base, i)])
-
-def find.go?(m: Array<U32>, +p: Pos, +k: U32, +base: U32, +i: U32, +n: U32) -> Array<U32> & U32:
-  find.go.b(m, p, k, base, i, n, U32.is_lt(i, n))
-
 def find.x?(+p: Pos, +k: U32, +base: U32, +i: U32, +n: U32, +mv: U32, r: Array<U32> & Bool) ->
   Array<U32> & U32:
   match r:
@@ -1172,6 +1161,17 @@ def find.v?(+p: Pos, +k: U32, +base: U32, +i: U32, +n: U32, r: Array<U32> & U32)
   (m, +mv) = r
   find.w(p, k, base, i, n, mv, U32.is_eq(mv.ukey(mv), k), m)
 
+def find.go.b?(m: Array<U32>, +p: Pos, +k: U32, +base: U32, +i: U32, +n: U32, go: Bool) ->
+  Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, 0)
+    case True{}:
+      find.v(p, k, base, i, n, m[U32.add(base, i)])
+
+def find.go?(m: Array<U32>, +p: Pos, +k: U32, +base: U32, +i: U32, +n: U32) -> Array<U32> & U32:
+  find.go.b(m, p, k, base, i, n, U32.is_lt(i, n))
+
 def find.gen(+p: Pos, +k: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
   find.go(m, p, k, base, 0, n)
@@ -1182,20 +1182,22 @@ def find_move(m: Array<U32>, +p: Pos, s: String, +ply: U32) -> Array<U32> & U32:
   +base = U32.add(MOVES(), U32.shln(ply, 8n))
   find.gen(p, uci.key(s), base, gen(m, p, base, 0))
 
-def perft.add?(+p: Pos, +depth: U32, +ply: U32, +base: U32, +i: U32, +n: U32, +acc: U32,
-               +mv: U32, +np: Pos, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +c) = r
-  perft.next(p, depth, ply, base, i, n, U32.add(acc, c), unmake(m, np, mv))
-
-def perft.gen?(+p: Pos, +depth: U32, +ply: U32, +base: U32, r: Array<U32> & U32) ->
-  Array<U32> & U32:
-  (m, +n) = r
-  perft.loop(m, p, depth, ply, base, 0, n, 0, U32.is_lt(0, n))
-
 # number of leaf nodes of the legal move tree of the given depth (>= 1)
 def perft?(m: Array<U32>, +p: Pos, +depth: U32, +ply: U32) -> Array<U32> & U32:
   +base = U32.add(MOVES(), U32.shln(ply, 8n))
   perft.gen(p, depth, ply, base, gen(m, p, base, 0))
+
+# Perft
+# -----
+
+def perft.next?(+p: Pos, +depth: U32, +ply: U32, +base: U32, +i: U32, +n: U32, +acc: U32,
+                m: Array<U32>) -> Array<U32> & U32:
+  perft.loop(m, p, depth, ply, base, U32.add(i, 1), n, acc, U32.is_lt(U32.add(i, 1), n))
+
+def perft.add?(+p: Pos, +depth: U32, +ply: U32, +base: U32, +i: U32, +n: U32, +acc: U32,
+               +mv: U32, +np: Pos, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +c) = r
+  perft.next(p, depth, ply, base, i, n, U32.add(acc, c), unmake(m, np, mv))
 
 def perft.sub?(+p: Pos, +depth: U32, +ply: U32, +base: U32, +i: U32, +n: U32, +acc: U32,
                +mv: U32, +np: Pos, m: Array<U32>, leaf: Bool) -> Array<U32> & U32:
@@ -1232,25 +1234,10 @@ def perft.loop?(m: Array<U32>, +p: Pos, +depth: U32, +ply: U32, +base: U32, +i: 
     case True{}:
       perft.mv(p, depth, ply, base, i, n, acc, m[U32.add(base, i)])
 
-# Perft
-# -----
-
-def perft.next?(+p: Pos, +depth: U32, +ply: U32, +base: U32, +i: U32, +n: U32, +acc: U32,
-                m: Array<U32>) -> Array<U32> & U32:
-  perft.loop(m, p, depth, ply, base, U32.add(i, 1), n, acc, U32.is_lt(U32.add(i, 1), n))
-
-def divide.legal?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
-                  +mv: U32, +np: Pos, r: Array<U32> & Bool) -> Array<U32> & String:
-  match r:
-    case (m, True{}):
-      divide.loop(unmake(m, np, mv), p, depth, base, U32.add(i, 1), n, acc, tot)
-    case (m, False{}):
-      divide.add(p, depth, base, i, n, acc, tot, mv, np, perft(m, np, U32.sub(depth, 1), 1))
-
-def divide.made?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
-                 +mv: U32, r: Array<U32> & Pos) -> Array<U32> & String:
-  (m, +np) = r
-  divide.legal(p, depth, base, i, n, acc, tot, mv, np, left_in_check(m, np))
+def perft.gen?(+p: Pos, +depth: U32, +ply: U32, +base: U32, r: Array<U32> & U32) ->
+  Array<U32> & U32:
+  (m, +n) = r
+  perft.loop(m, p, depth, ply, base, 0, n, 0, U32.is_lt(0, n))
 
 def divide.mv?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
                r: Array<U32> & U32) -> Array<U32> & String:
@@ -1276,6 +1263,19 @@ def divide.add?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String,
   divide.loop(unmake(m, np, mv), p, depth, base, U32.add(i, 1), n,
     acc ++ mv.uci(mv) ++ ": " ++ U32.show(c) ++ "\n", U32.add(tot, c))
 
+def divide.legal?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
+                  +mv: U32, +np: Pos, r: Array<U32> & Bool) -> Array<U32> & String:
+  match r:
+    case (m, True{}):
+      divide.loop(unmake(m, np, mv), p, depth, base, U32.add(i, 1), n, acc, tot)
+    case (m, False{}):
+      divide.add(p, depth, base, i, n, acc, tot, mv, np, perft(m, np, U32.sub(depth, 1), 1))
+
+def divide.made?(+p: Pos, +depth: U32, +base: U32, +i: U32, +n: U32, acc: String, +tot: U32,
+                 +mv: U32, r: Array<U32> & Pos) -> Array<U32> & String:
+  (m, +np) = r
+  divide.legal(p, depth, base, i, n, acc, tot, mv, np, left_in_check(m, np))
+
 def divide.gen?(+p: Pos, +depth: U32, +base: U32, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +n) = r
   divide.loop(m, p, depth, base, 0, n, "", 0)
@@ -1283,3 +1283,11 @@ def divide.gen?(+p: Pos, +depth: U32, +base: U32, r: Array<U32> & U32) -> Array<
 def divide?(m: Array<U32>, +p: Pos, +depth: U32) -> Array<U32> & String:
   +base = MOVES()
   divide.gen(p, depth, base, gen(m, p, base, 0))
+
+# play a null move (side to move passes); records the hash history
+def null.make(m: Array<U32>, +p: Pos) -> Array<U32> & Pos:
+  +np = P.null(p)
+  +h = U32.add(HISTH(), U32.shln(U32.and(P.hidx(np), 4095), 1n))
+  m[h] <- P.hlo(np)
+  m[U32.add(h, 1)] <- P.hhi(np)
+  (m, np)

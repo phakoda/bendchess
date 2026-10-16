@@ -3,6 +3,7 @@
 import Base
 import ./core.bend as C
 import ./board.bend as B
+import ./uci.bend as U
 
 # List<&1, String> (as IO.args answers) -> List<&2, String>
 def strs(xs: List<&1, String>) -> List<&2, String>:
@@ -88,7 +89,7 @@ def cmd.named.go(perft: Bool, divide: Bool, fen: Bool, rest: List<&2, String>) -
     case False{} False{} True{}:
       cmd.fen(fen.or_start(rest))
     case False{} False{} False{}:
-      IO.print("unknown command")
+      U.uci.main()
 
 def cmd.named(+c: String, rest: List<&2, String>) -> IO(Unit):
   cmd.named.go(String.eq(c, "perft"), String.eq(c, "divide"), String.eq(c, "fen"), rest)
@@ -101,7 +102,7 @@ def cmd.go(args: List<&2, String>) -> IO(Unit):
     case Con{c, rest}:
       cmd.named(c, rest)
     case Nil{}:
-      IO.print("usage: bendchess perft|divide <depth> [fen] | fen <fen>")
+      U.uci.main()
 
 def main.args(args: List<&2, String>) -> IO(Unit):
   match args:
