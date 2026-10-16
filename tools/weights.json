@@ -1,11 +1,95 @@
 {
- "_comment": "Hand-set initial evaluation weights (centipawns), [mg, eg] per feature. Feature values are white-minus-black counts computed by src/eval.bend. Regenerate src/weights.bend with tools/gen_weights.py; tools/tune.py rewrites this file.",
+ "_comment": "Evaluation weights fitted by tools/tune.py (Texel-style, SF/result blend lambda=0.7); test MSE 0.02561 vs hand 0.02639.",
  "features": [
-  ["passed_r1", 0, 5], ["passed_r2", 0, 10], ["passed_r3", 5, 15], ["passed_r4", 15, 30],
-  ["passed_r5", 30, 60], ["passed_r6", 50, 100],
-  ["isolated", -10, -12], ["doubled", -8, -18], ["bishop_pair", 30, 50],
-  ["rook_open", 25, 8], ["rook_semiopen", 12, 6], ["rook_7th", 10, 20],
-  ["mob_knight", 4, 4], ["mob_bishop", 5, 5], ["mob_rook", 2, 4], ["mob_queen", 1, 2],
-  ["king_attack", 1, 0], ["pawn_shield", 10, 0]
+  [
+   "passed_r1",
+   -2,
+   18
+  ],
+  [
+   "passed_r2",
+   6,
+   20
+  ],
+  [
+   "passed_r3",
+   -9,
+   61
+  ],
+  [
+   "passed_r4",
+   12,
+   83
+  ],
+  [
+   "passed_r5",
+   45,
+   57
+  ],
+  [
+   "passed_r6",
+   47,
+   13
+  ],
+  [
+   "isolated",
+   -10,
+   -12
+  ],
+  [
+   "doubled",
+   -1,
+   -23
+  ],
+  [
+   "bishop_pair",
+   -13,
+   68
+  ],
+  [
+   "rook_open",
+   35,
+   -21
+  ],
+  [
+   "rook_semiopen",
+   9,
+   16
+  ],
+  [
+   "rook_7th",
+   -30,
+   17
+  ],
+  [
+   "mob_knight",
+   3,
+   7
+  ],
+  [
+   "mob_bishop",
+   6,
+   3
+  ],
+  [
+   "mob_rook",
+   4,
+   3
+  ],
+  [
+   "mob_queen",
+   1,
+   7
+  ],
+  [
+   "king_attack",
+   5,
+   -2
+  ],
+  [
+   "pawn_shield",
+   13,
+   -5
+  ]
  ]
 }
