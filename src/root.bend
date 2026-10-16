@@ -46,14 +46,6 @@ def rslot(+i: U32, +k: U32) -> U32:
 def rd(m: Array<U32>, +i: U32, +k: U32) -> Array<U32> & U32:
   m[rslot(i, k)]
 
-def nlegal.go?(m: Array<U32>, +p: B.Pos, +base: U32, +i: U32, +n: U32, +cnt: U32, +chk: Bool, go: Bool) ->
-  Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, cnt)
-    case True{}:
-      nlegal.mv(p, base, i, n, cnt, chk, m[U32.add(base, i)])
-
 def nlegal?(m: Array<U32>, +p: B.Pos, +base: U32, +i: U32, +n: U32, +cnt: U32, +chk: Bool) ->
   Array<U32> & U32:
   nlegal.go(m, p, base, i, n, cnt, chk, U32.is_lt(i, n))
@@ -76,6 +68,14 @@ def nlegal.mv?(+p: B.Pos, +base: U32, +i: U32, +n: U32, +cnt: U32, +chk: Bool, r
   (m, +mvk) = r
   +mv = C.mv.bare(mvk)
   nlegal.mk(p, base, i, n, cnt, chk, mv, B.make(m, p, mv))
+
+def nlegal.go?(m: Array<U32>, +p: B.Pos, +base: U32, +i: U32, +n: U32, +cnt: U32, +chk: Bool, go: Bool) ->
+  Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, cnt)
+    case True{}:
+      nlegal.mv(p, base, i, n, cnt, chk, m[U32.add(base, i)])
 
 def nlegal.gen?(+p: B.Pos, +base: U32, +chk: Bool, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
@@ -117,14 +117,6 @@ def setup.gc?(+i: U32, +mv: U32, +np: B.Pos, +o: S.Opt, r: Array<U32> & Bool) ->
   (m, +gc) = r
   setup.rep(i, mv, np, gc, o, legal_count(m, np, 1))
 
-def setup.loop.go?(m: Array<U32>, +p: B.Pos, +base: U32, +j: U32, +n: U32, +cnt: U32, +chk: Bool,
-                   +o: S.Opt, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, cnt)
-    case True{}:
-      setup.mv(p, base, j, n, cnt, chk, o, m[U32.add(base, j)])
-
 def setup.loop?(m: Array<U32>, +p: B.Pos, +base: U32, +j: U32, +n: U32, +cnt: U32, +chk: Bool,
                 +o: S.Opt) -> Array<U32> & U32:
   setup.loop.go(m, p, base, j, n, cnt, chk, o, U32.is_lt(j, n))
@@ -149,12 +141,13 @@ def setup.mv?(+p: B.Pos, +base: U32, +j: U32, +n: U32, +cnt: U32, +chk: Bool, +o
   +mv = C.mv.bare(mvk)
   setup.mk(p, base, j, n, cnt, chk, o, mv, B.make(m, p, mv))
 
-def swap8.go?(m: Array<U32>, +a: U32, +b: U32, +k: U32, go: Bool) -> Array<U32>:
+def setup.loop.go?(m: Array<U32>, +p: B.Pos, +base: U32, +j: U32, +n: U32, +cnt: U32, +chk: Bool,
+                   +o: S.Opt, go: Bool) -> Array<U32> & U32:
   match go:
     case False{}:
-      m
+      (m, cnt)
     case True{}:
-      swap8.r(a, b, k, m[rslot(a, k)])
+      setup.mv(p, base, j, n, cnt, chk, o, m[U32.add(base, j)])
 
 # swap root entries a and b
 def swap8?(m: Array<U32>, +a: U32, +b: U32, +k: U32) -> Array<U32>:
@@ -173,12 +166,12 @@ def swap8.r?(+a: U32, +b: U32, +k: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +va) = r
   swap8.w(a, b, k, va, m[rslot(b, k)])
 
-def sink.go?(m: Array<U32>, +j: U32, +sj: U32, go: Bool) -> Array<U32>:
+def swap8.go?(m: Array<U32>, +a: U32, +b: U32, +k: U32, go: Bool) -> Array<U32>:
   match go:
     case False{}:
       m
     case True{}:
-      sink.b(j, sj, m[rslot(U32.sub(j, 1), 1)])
+      swap8.r(a, b, k, m[rslot(a, k)])
 
 # move entry j (score sj) up while it beats its predecessor
 def sink?(m: Array<U32>, +j: U32, +sj: U32) -> Array<U32>:
@@ -195,8 +188,12 @@ def sink.b?(+j: U32, +sj: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +sp) = r
   sink.c(m, j, sj, C.s.gt(sj, sp))
 
-def sort?(m: Array<U32>, +i: U32, +n: U32) -> Array<U32>:
-  sort.go(m, i, n, U32.is_lt(i, n))
+def sink.go?(m: Array<U32>, +j: U32, +sj: U32, go: Bool) -> Array<U32>:
+  match go:
+    case False{}:
+      m
+    case True{}:
+      sink.b(j, sj, m[rslot(U32.sub(j, 1), 1)])
 
 def sort.k?(+i: U32, +n: U32, r: Array<U32> & U32) -> Array<U32>:
   (m, +s) = r
@@ -208,6 +205,9 @@ def sort.go?(m: Array<U32>, +i: U32, +n: U32, go: Bool) -> Array<U32>:
       m
     case True{}:
       sort.k(i, n, m[rslot(i, 1)])
+
+def sort?(m: Array<U32>, +i: U32, +n: U32) -> Array<U32>:
+  sort.go(m, i, n, U32.is_lt(i, n))
 
 def setup.fin?(r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +n) = r
@@ -241,9 +241,6 @@ def prio(+best: U32, +score: U32, +fluct: U32) -> U32:
   +gap = C.sel(C.s.lt(gap0, 0), 0, U32.min(gap0, 100000))
   U32.div(65536, U32.add(64, gap))
 
-def mean?(m: Array<U32>, +i: U32, +n: U32, +acc: U32) -> Array<U32> & U32:
-  mean.go(m, i, n, acc, U32.is_lt(i, n))
-
 # mean nodes per root move over the last iteration (for voi)
 def mean.k?(+i: U32, +n: U32, +acc: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +v) = r
@@ -255,6 +252,9 @@ def mean.go?(m: Array<U32>, +i: U32, +n: U32, +acc: U32, go: Bool) -> Array<U32>
       (m, U32.mul(U32.div(acc, U32.max(n, 1)), 16))
     case True{}:
       mean.k(i, n, acc, m[rslot(i, 2)])
+
+def mean?(m: Array<U32>, +i: U32, +n: U32, +acc: U32) -> Array<U32> & U32:
+  mean.go(m, i, n, acc, U32.is_lt(i, n))
 
 def voi(+pr: U32, +nodes: U32, +mean: U32) -> U32:
   U32.div(U32.mul(pr, 1024), U32.add(1024, U32.div(U32.mul(nodes, 1024), U32.max(mean, 1))))
@@ -268,41 +268,41 @@ def cas.red(+cas: U32, +i: U32, +d: U32, +v: U32) -> U32:
 # exact: search every root move with a full window (exact scores for all
 # moves, i.e. MultiPV over the whole move list; used by `analyze`)
 type Rt is Data:
-  Rt{p: B.Pos, d: U32, beta: U32, n: U32, o: S.Opt, chk: Bool, best: U32, mean: U32, exact: Bool}
+  Rt{p: B.Pos, d: U32, beta: U32, n: U32, o: S.Opt, chk: Bool, best: U32, mean: U32, exact: Bool, nw: U32, k: U32}
 
 def Rt.p(+x: Rt) -> B.Pos:
   match x:
-    case Rt{p, _, _, _, _, _, _, _, _}:
+    case Rt{p, _, _, _, _, _, _, _, _, _, _}:
       p
 
 def Rt.d(+x: Rt) -> U32:
   match x:
-    case Rt{_, d, _, _, _, _, _, _, _}:
+    case Rt{_, d, _, _, _, _, _, _, _, _, _}:
       d
 
 def Rt.beta(+x: Rt) -> U32:
   match x:
-    case Rt{_, _, beta, _, _, _, _, _, _}:
+    case Rt{_, _, beta, _, _, _, _, _, _, _, _}:
       beta
 
 def Rt.n(+x: Rt) -> U32:
   match x:
-    case Rt{_, _, _, n, _, _, _, _, _}:
+    case Rt{_, _, _, n, _, _, _, _, _, _, _}:
       n
 
 def Rt.o(+x: Rt) -> S.Opt:
   match x:
-    case Rt{_, _, _, _, o, _, _, _, _}:
+    case Rt{_, _, _, _, o, _, _, _, _, _, _}:
       o
 
 def Rt.best(+x: Rt) -> U32:
   match x:
-    case Rt{_, _, _, _, _, _, best, _, _}:
+    case Rt{_, _, _, _, _, _, best, _, _, _, _}:
       best
 
 def Rt.mean(+x: Rt) -> U32:
   match x:
-    case Rt{_, _, _, _, _, _, _, mean, _}:
+    case Rt{_, _, _, _, _, _, _, mean, _, _, _}:
       mean
 
 def rec.b?(+i: U32, +s: U32, +bound: U32, +spent: U32, +old: U32, r: Array<U32> & U32) ->
@@ -327,17 +327,32 @@ def it.unmk(+np: B.Pos, +mv: U32, r: Array<U32> & U32) -> Array<U32> & U32:
 
 def Rt.exact(+x: Rt) -> Bool:
   match x:
-    case Rt{_, _, _, _, _, _, _, _, exact}:
+    case Rt{_, _, _, _, _, _, _, _, exact, _, _}:
       exact
 
-def it.re1.b?(m: Array<U32>, +rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +np: B.Pos,
-              +gc: Bool, +raw: U32, go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      it.re2(rt, i, alpha, bestsc, mv, b0, np, gc, (m, raw))
-    case True{}:
-      it.re2(rt, i, alpha, bestsc, mv, b0, np, gc,
-        S.search(m, np, U32.sub(Rt.d(rt), 1), C.s.neg(U32.add(alpha, 1)), C.s.neg(alpha), 1, True{}, gc, Rt.o(rt)))
+def Rt.nw(+x: Rt) -> U32:
+  match x:
+    case Rt{_, _, _, _, _, _, _, _, _, nw, _}:
+      nw
+
+def Rt.k(+x: Rt) -> U32:
+  match x:
+    case Rt{_, _, _, _, _, _, _, _, _, _, k}:
+      k
+
+# Parallel root split (Threads > 1)
+# ---------------------------------
+# Each worker owns a full engine memory (board, history, its own TT). In an
+# iteration the main memory searches the first root move alone (it sets
+# alpha); the remaining moves are dealt to the workers by a hash of the
+# move (so a move goes to the same worker every iteration and finds its
+# subtree in that worker's TT), searched with Bend's fork-join parallel
+# calls, and the per-move results, node counts and the best PV are merged
+# back into the main memory.
+
+# the worker (0 .. nw-1) that searches root move mv
+def mown(+mv: U32, +nw: U32) -> U32:
+  U32.and(U32.shrn(U32.mul(mv, 2654435761), 20n), U32.sub(nw, 1))
 
 def it.re1?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +np: B.Pos, +gc: Bool,
             +red: U32, r: Array<U32> & U32) -> Array<U32> & U32:
@@ -389,13 +404,21 @@ def it.f1?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, r: Array<U32> 
   (m, +sc) = r
   it.f2(rt, i, alpha, bestsc, mv, sc, m[rslot(i, 7)])
 
+def it.own?(m: Array<U32>, +rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, mine: Bool) -> Array<U32> & U32:
+  match mine:
+    case True{}:
+      it.f1(rt, i, alpha, bestsc, mv, m[rslot(i, 1)])
+    case False{}:
+      it.loop(m, rt, U32.add(i, 1), alpha, bestsc)
+
 def it.f0?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +mv) = r
-  it.f1(rt, i, alpha, bestsc, mv, m[rslot(i, 1)])
+  it.own(m, rt, i, alpha, bestsc, mv,
+    U32.is_eq(Rt.nw(rt), 1) || U32.is_zero(i) || U32.is_eq(mown(mv, Rt.nw(rt)), Rt.k(rt)))
 
 def Rt.chk(+x: Rt) -> Bool:
   match x:
-    case Rt{_, _, _, _, _, chk, _, _, _}:
+    case Rt{_, _, _, _, _, chk, _, _, _, _, _}:
       chk
 
 def it.loop.go?(m: Array<U32>, +rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, go: Bool) -> Array<U32> & U32:
@@ -461,6 +484,42 @@ def it.re2?(+rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +np
   it.re2.b(m, rt, i, alpha, bestsc, mv, b0, np, gc, raw,
     C.s.gt(s, alpha) && C.s.lt(s, Rt.beta(rt)))
 
+def it.re1.b?(m: Array<U32>, +rt: Rt, +i: U32, +alpha: U32, +bestsc: U32, +mv: U32, +b0: U32, +np: B.Pos,
+              +gc: Bool, +raw: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      it.re2(rt, i, alpha, bestsc, mv, b0, np, gc, (m, raw))
+    case True{}:
+      it.re2(rt, i, alpha, bestsc, mv, b0, np, gc,
+        S.search(m, np, U32.sub(Rt.d(rt), 1), C.s.neg(U32.add(alpha, 1)), C.s.neg(alpha), 1, True{}, gc, Rt.o(rt)))
+
+def eff.sum.k?(+i: U32, +n: U32, +acc: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  eff.sum(m, U32.add(i, 1), n, U32.add(acc, U32.shrn(v, 4n)))
+
+def eff.sum.go?(m: Array<U32>, +i: U32, +n: U32, +acc: U32, go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, acc)
+    case True{}:
+      eff.sum.k(i, n, acc, m[rslot(i, 2)])
+
+def eff.sum?(m: Array<U32>, +i: U32, +n: U32, +acc: U32) -> Array<U32> & U32:
+  eff.sum.go(m, i, n, acc, U32.is_lt(i, n))
+
+# share (percent) of the last iteration's root nodes spent on the best move
+def EFFORT() -> U32:
+  U32.add(B.SC(), 52)
+
+def eff.b?(+s: U32, +tot: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +bn) = r
+  m[EFFORT()] <- U32.min(U32.div(U32.mul(U32.min(U32.shrn(bn, 4n), 40000000), 100), U32.max(tot, 1)), 100)
+  (m, s)
+
+def eff.a?(+s: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +tot) = r
+  eff.b(s, tot, m[rslot(0, 2)])
+
 def iter.fin?(+n: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +s) = r
   eff.a(s, eff.sum(sort(m, 1, n), 0, n, 0))
@@ -468,7 +527,7 @@ def iter.fin?(+n: U32, r: Array<U32> & U32) -> Array<U32> & U32:
 def iter.c?(+p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, +exact: Bool, +n: U32,
             +best: U32, r: Array<U32> & U32) -> Array<U32> & U32:
   (m, +mn) = r
-  iter.fin(n, it.loop(m, Rt{p, d, beta, n, o, chk, best, mn, exact}, 0, alpha, C.s.neg(C.INF())))
+  iter.fin(n, it.loop(m, Rt{p, d, beta, n, o, chk, best, mn, exact, 1, 0}, 0, alpha, C.s.neg(C.INF())))
 
 def iter.b?(+p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, +exact: Bool, +n: U32,
             r: Array<U32> & U32) -> Array<U32> & U32:
@@ -491,29 +550,332 @@ def iter?(m: Array<U32>, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt,
   Array<U32> & U32:
   iter.x(m, p, d, alpha, beta, o, chk, False{})
 
-# share (percent) of the last iteration's root nodes spent on the best move
-def EFFORT() -> U32:
-  U32.add(B.SC(), 52)
+type Ws is Type:
+  Ws{a: Array<U32>, b: Array<U32>, c: Array<U32>}
 
-def eff.sum?(m: Array<U32>, +i: U32, +n: U32, +acc: U32) -> Array<U32> & U32:
-  eff.sum.go(m, i, n, acc, U32.is_lt(i, n))
+def ws.mem(big: Bool) -> Array<U32>:
+  match big:
+    case True{}:
+      [0 : U32^23n]
+    case False{}:
+      [0 : U32^1n]
 
-def eff.sum.k?(+i: U32, +n: U32, +acc: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  eff.sum(m, U32.add(i, 1), n, U32.add(acc, U32.shrn(v, 4n)))
+# workers for th threads (1, 2 or 4; 3 counts as 2)
+def Ws.new(+th: U32) -> Ws:
+  Ws{ws.mem(U32.is_ge(th, 2)), ws.mem(U32.is_ge(th, 4)), ws.mem(U32.is_ge(th, 4))}
 
-def eff.sum.go?(m: Array<U32>, +i: U32, +n: U32, +acc: U32, go: Bool) -> Array<U32> & U32:
+def nworkers(+th: U32) -> U32:
+  C.sel(U32.is_ge(th, 4), 4, C.sel(U32.is_ge(th, 2), 2, 1))
+
+def cp.k?(dst: Array<U32>, +i: U32, +end: U32, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (src, +v) = r
+  dst[i] <- v
+  cp.go(src, dst, U32.add(i, 1), end, U32.is_lt(U32.add(i, 1), end))
+
+# copy src[i .. end) to dst[i .. end)
+def cp.go?(src: Array<U32>, dst: Array<U32>, +i: U32, +end: U32, go: Bool) -> Array<U32> & Array<U32>:
   match go:
     case False{}:
-      (m, acc)
+      (src, dst)
     case True{}:
-      eff.sum.k(i, n, acc, m[rslot(i, 2)])
+      cp.k(dst, i, end, src[i])
 
-def eff.b?(+s: U32, +tot: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +bn) = r
-  m[EFFORT()] <- U32.min(U32.div(U32.mul(U32.min(U32.shrn(bn, 4n), 40000000), 100), U32.max(tot, 1)), 100)
-  (m, s)
+def cp?(src: Array<U32>, dst: Array<U32>, +i: U32, +end: U32) -> Array<U32> & Array<U32>:
+  cp.go(src, dst, i, end, U32.is_lt(i, end))
 
-def eff.a?(+s: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +tot) = r
-  eff.b(s, tot, m[rslot(0, 2)])
+# worker memory := the main memory's board, repetition history, root table
+# and TT generation; its own budget share
+def sync.d?(w: Array<U32>, +share: U32, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (m, +age) = r
+  w[S.TTAGE()] <- age
+  w[S.BUDGET()] <- share
+  w[S.STOP()] <- 0
+  w[S.SELD()] <- 0
+  w[B.PVLEN()] <- 0
+  (m, w)
+
+def sync.c?(+share: U32, r: Array<U32> & Array<U32>) -> Array<U32> & Array<U32>:
+  (m, w) = r
+  sync.d(w, share, m[S.TTAGE()])
+
+def sync.b?(+n: U32, +share: U32, r: Array<U32> & Array<U32>) -> Array<U32> & Array<U32>:
+  (m, w) = r
+  sync.c(share, cp(m, w, B.ROOT(), rslot(n, 0)))
+
+def sync?(m: Array<U32>, w: Array<U32>, +n: U32, +share: U32, go: Bool) -> Array<U32> & Array<U32>:
+  match go:
+    case True{}:
+      sync.b(n, share, cp(m, w, 0, 9216))
+    case False{}:
+      (m, w)
+
+def mg.tab.go?(m: Array<U32>, w: Array<U32>, +k: U32, +nw: U32, +i: U32, +n: U32, go: Bool) ->
+  Array<U32> & Array<U32>:
+  match go:
+    case False{}:
+      (m, w)
+    case True{}:
+      mg.tab.k(w, k, nw, i, n, m[rslot(i, 0)])
+
+def mg.tab?(m: Array<U32>, w: Array<U32>, +k: U32, +nw: U32, +i: U32, +n: U32) -> Array<U32> & Array<U32>:
+  mg.tab.go(m, w, k, nw, i, n, U32.is_lt(i, n))
+
+def mg.tab.n?(+k: U32, +nw: U32, +i: U32, +n: U32, r: Array<U32> & Array<U32>) -> Array<U32> & Array<U32>:
+  (w, m) = r
+  mg.tab(m, w, k, nw, U32.add(i, 1), n)
+
+def mg.tab.c?(m: Array<U32>, w: Array<U32>, +k: U32, +nw: U32, +i: U32, +n: U32, mine: Bool) ->
+  Array<U32> & Array<U32>:
+  match mine:
+    case True{}:
+      mg.tab.n(k, nw, i, n, cp(w, m, rslot(i, 0), rslot(i, 8)))
+    case False{}:
+      mg.tab(m, w, k, nw, U32.add(i, 1), n)
+
+# merge: root-table entries of worker k back into the main memory
+def mg.tab.k?(w: Array<U32>, +k: U32, +nw: U32, +i: U32, +n: U32, r: Array<U32> & U32) ->
+  Array<U32> & Array<U32>:
+  (m, +mv) = r
+  mg.tab.c(m, w, k, nw, i, n, U32.is_eq(mown(mv, nw), k))
+
+# merge counters: nodes left (summed), stop flag and seldepth (max)
+def mg.cnt.f?(w: Array<U32>, +wl: U32, +wst: U32, +wd: U32, +ml: U32, +ms: U32, r: Array<U32> & U32) ->
+  Array<U32> & Array<U32>:
+  (m, +md) = r
+  m[S.BUDGET()] <- U32.add(ml, wl)
+  m[S.STOP()] <- U32.or(ms, wst)
+  m[S.SELD()] <- U32.max(md, wd)
+  (m, w)
+
+def mg.cnt.e?(w: Array<U32>, +wl: U32, +wst: U32, +wd: U32, +ml: U32, r: Array<U32> & U32) ->
+  Array<U32> & Array<U32>:
+  (m, +ms) = r
+  mg.cnt.f(w, wl, wst, wd, ml, ms, m[S.SELD()])
+
+def mg.cnt.d?(w: Array<U32>, +wl: U32, +wst: U32, +wd: U32, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (m, +ml) = r
+  mg.cnt.e(w, wl, wst, wd, ml, m[S.STOP()])
+
+def mg.cnt.c?(m: Array<U32>, +wl: U32, +wst: U32, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (w, +wd) = r
+  mg.cnt.d(w, wl, wst, wd, m[S.BUDGET()])
+
+def mg.cnt.b?(m: Array<U32>, +wl: U32, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (w, +wst) = r
+  mg.cnt.c(m, wl, wst, w[S.SELD()])
+
+def mg.cnt.a?(m: Array<U32>, r: Array<U32> & U32) -> Array<U32> & Array<U32>:
+  (w, +wl) = r
+  mg.cnt.b(m, wl, w[S.STOP()])
+
+# merge the PV when the worker found the best move so far
+def mg.pv.b?(r: Array<U32> & Array<U32>) -> Array<U32> & Array<U32>:
+  (w, m) = r
+  (m, w)
+
+def mg.pv?(m: Array<U32>, w: Array<U32>, better: Bool) -> Array<U32> & Array<U32>:
+  match better:
+    case True{}:
+      mg.pv.b(cp(w, m, B.PVLEN(), U32.add(B.PVLEN(), 1)))
+    case False{}:
+      (m, w)
+
+def mg.pv.c?(r: Array<U32> & Array<U32>) -> Array<U32> & Array<U32>:
+  (m, w) = r
+  mg.pv.b(cp(w, m, B.PVT(), U32.add(B.PVT(), 128)))
+
+def mg.pvb?(m: Array<U32>, w: Array<U32>, better: Bool) -> Array<U32> & Array<U32>:
+  match better:
+    case True{}:
+      mg.pv.c(mg.pv(m, w, True{}))
+    case False{}:
+      (m, w)
+
+def mg.fin.b?(+sw: U32, +bs: U32, r: Array<U32> & Array<U32>) -> (Array<U32> & U32) & Array<U32>:
+  (m, w) = r
+  ((m, C.s.max(sw, bs)), w)
+
+# merge worker k (result rw = its memory and fail-soft best) into m;
+# bs = the best score so far; answers ((m, new best), worker memory)
+def mg.fin?(+sw: U32, +bs: U32, +a1: U32, r: Array<U32> & Array<U32>) -> (Array<U32> & U32) & Array<U32>:
+  (m, w) = r
+  +better = C.s.gt(sw, bs) && C.s.gt(sw, a1)
+  mg.fin.b(sw, bs, mg.pvb(m, w, better))
+
+def mg.c?(+sw: U32, +bs: U32, +a1: U32, r: Array<U32> & Array<U32>) -> (Array<U32> & U32) & Array<U32>:
+  (m, w) = r
+  mg.fin(sw, bs, a1, mg.cnt.a(m, w[S.BUDGET()]))
+
+def merge?(m: Array<U32>, rw: Array<U32> & U32, +k: U32, +nw: U32, +n: U32, +a1: U32, +bs: U32) ->
+  (Array<U32> & U32) & Array<U32>:
+  (w, +sw) = rw
+  mg.c(sw, bs, a1, mg.tab(m, w, k, nw, 1, n))
+
+def NEGINF() -> U32:
+  C.s.neg(C.INF())
+
+def wrt(+p: B.Pos, +d: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool, +best: U32, +mn: U32, +nw: U32,
+        +k: U32) -> Rt:
+  Rt{p, d, beta, n, o, chk, best, mn, False{}, nw, k}
+
+def par2?(m: Array<U32>, a: Array<U32>, +rt0: Rt, +rt1: Rt, +a1: U32) -> (Array<U32> & U32) & (Array<U32> & U32):
+  r0 r1 = it.loop(m, rt0, 1, a1, NEGINF()) it.loop(a, rt1, 1, a1, NEGINF())
+  (r0, r1)
+
+def par4?(m: Array<U32>, a: Array<U32>, b: Array<U32>, c: Array<U32>, +rt0: Rt, +rt1: Rt, +rt2: Rt, +rt3: Rt,
+          +a1: U32) -> ((Array<U32> & U32) & (Array<U32> & U32)) & ((Array<U32> & U32) & (Array<U32> & U32)):
+  x y = par2(m, a, rt0, rt1, a1) par2(b, c, rt2, rt3, a1)
+  (x, y)
+
+# answers of a parallel iteration: ((main memory, best score), workers)
+def par.end?(+n: U32, b: Array<U32>, c: Array<U32>, r: (Array<U32> & U32) & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (ms, a) = r
+  (iter.fin(n, ms), Ws{a, b, c})
+
+def par.j2.b?(+n: U32, +a1: U32, b: Array<U32>, c: Array<U32>, r1: Array<U32> & U32, r0: Array<U32> & U32) ->
+  (Array<U32> & U32) & Ws:
+  (m, +sm) = r0
+  par.end(n, b, c, merge(m, r1, 1, 2, n, a1, C.s.max(sm, a1)))
+
+def par.j2?(+n: U32, +a1: U32, +s0: U32, b: Array<U32>, c: Array<U32>,
+            rr: (Array<U32> & U32) & (Array<U32> & U32)) -> (Array<U32> & U32) & Ws:
+  (r0, r1) = rr
+  par.j2.b(n, C.s.max(a1, s0), b, c, r1, r0)
+
+def par.j4.e?(+n: U32, a: Array<U32>, b: Array<U32>, r: (Array<U32> & U32) & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (ms, c) = r
+  (iter.fin(n, ms), Ws{a, b, c})
+
+def par.j4.d2?(+n: U32, +a1: U32, a: Array<U32>, b: Array<U32>, r3: Array<U32> & U32, ms: Array<U32> & U32) ->
+  (Array<U32> & U32) & Ws:
+  (m, +bs) = ms
+  par.j4.e(n, a, b, merge(m, r3, 3, 4, n, a1, bs))
+
+def par.j4.d?(+n: U32, +a1: U32, a: Array<U32>, r3: Array<U32> & U32, r: (Array<U32> & U32) & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (ms, b) = r
+  par.j4.d2(n, a1, a, b, r3, ms)
+
+def par.j4.c2?(+n: U32, +a1: U32, a: Array<U32>, r2: Array<U32> & U32, r3: Array<U32> & U32, ms: Array<U32> & U32) ->
+  (Array<U32> & U32) & Ws:
+  (m, +bs) = ms
+  par.j4.d(n, a1, a, r3, merge(m, r2, 2, 4, n, a1, bs))
+
+def par.j4.c?(+n: U32, +a1: U32, r2: Array<U32> & U32, r3: Array<U32> & U32, r: (Array<U32> & U32) & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (ms, a) = r
+  par.j4.c2(n, a1, a, r2, r3, ms)
+
+def par.j4.b?(+n: U32, +a1: U32, r1: Array<U32> & U32, r2: Array<U32> & U32, r3: Array<U32> & U32,
+              r0: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +sm) = r0
+  par.j4.c(n, a1, r2, r3, merge(m, r1, 1, 4, n, a1, C.s.max(sm, a1)))
+
+def par.j4.y?(+n: U32, +a1: U32, r0: Array<U32> & U32, r1: Array<U32> & U32, y: (Array<U32> & U32) & (Array<U32> & U32)) ->
+  (Array<U32> & U32) & Ws:
+  (r2, r3) = y
+  par.j4.b(n, a1, r1, r2, r3, r0)
+
+def par.j4.a?(+n: U32, +a1: U32, x: (Array<U32> & U32) & (Array<U32> & U32), y: (Array<U32> & U32) & (Array<U32> & U32)) ->
+  (Array<U32> & U32) & Ws:
+  (r0, r1) = x
+  par.j4.y(n, a1, r0, r1, y)
+
+def par.j4?(+n: U32, +a1: U32, rr: ((Array<U32> & U32) & (Array<U32> & U32)) & ((Array<U32> & U32) & (Array<U32> & U32))) ->
+  (Array<U32> & U32) & Ws:
+  (x, y) = rr
+  par.j4.a(n, a1, x, y)
+
+def par.run?(m: Array<U32>, a: Array<U32>, b: Array<U32>, c: Array<U32>, +p: B.Pos, +d: U32, +beta: U32, +n: U32,
+             +o: S.Opt, +chk: Bool, +best: U32, +mn: U32, +a1: U32, +s0: U32, four: Bool) -> (Array<U32> & U32) & Ws:
+  match four:
+    case False{}:
+      par.j2(n, a1, s0, b, c, par2(m, a, wrt(p, d, beta, n, o, chk, best, mn, 2, 0),
+        wrt(p, d, beta, n, o, chk, best, mn, 2, 1), a1))
+    case True{}:
+      par.j4(n, a1, par4(m, a, b, c, wrt(p, d, beta, n, o, chk, best, mn, 4, 0), wrt(p, d, beta, n, o, chk, best, mn, 4, 1),
+        wrt(p, d, beta, n, o, chk, best, mn, 4, 2), wrt(p, d, beta, n, o, chk, best, mn, 4, 3), a1))
+
+def par.s3?(a: Array<U32>, b: Array<U32>, +p: B.Pos, +d: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+            +best: U32, +mn: U32, +a1: U32, +s0: U32, +share: U32, +four: Bool, r: Array<U32> & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (m, c) = r
+  m[S.BUDGET()] <- share
+  par.run(m, a, b, c, p, d, beta, n, o, chk, best, mn, a1, s0, four)
+
+def par.s2?(a: Array<U32>, c: Array<U32>, +p: B.Pos, +d: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+            +best: U32, +mn: U32, +a1: U32, +s0: U32, +share: U32, +four: Bool, r: Array<U32> & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (m, b) = r
+  par.s3(a, b, p, d, beta, n, o, chk, best, mn, a1, s0, share, four, sync(m, c, n, share, four))
+
+def par.s1?(b: Array<U32>, c: Array<U32>, +p: B.Pos, +d: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+            +best: U32, +mn: U32, +a1: U32, +s0: U32, +share: U32, +four: Bool, r: Array<U32> & Array<U32>) ->
+  (Array<U32> & U32) & Ws:
+  (m, a) = r
+  par.s2(a, c, p, d, beta, n, o, chk, best, mn, a1, s0, share, four, sync(m, b, n, share, four))
+
+# the first move is searched: s0 its score, the rest is split
+def par.h2?(m: Array<U32>, ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+            +best: U32, +mn: U32, +nw: U32, +s0: U32, +left: U32) -> (Array<U32> & U32) & Ws:
+  match ws:
+    case Ws{a, b, c}:
+      +share = U32.div(left, nw)
+      +four = U32.is_eq(nw, 4)
+      par.s1(b, c, p, d, beta, n, o, chk, best, mn, C.s.max(alpha, s0), s0, share, four, sync(m, a, n, share, True{}))
+
+def par.h?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+           +best: U32, +mn: U32, +nw: U32, +s0: U32, r: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +left) = r
+  par.h2(m, ws, p, d, alpha, beta, n, o, chk, best, mn, nw, s0, left)
+
+def par.g?(m: Array<U32>, ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+           +best: U32, +mn: U32, +nw: U32, +s0: U32, done: Bool) -> (Array<U32> & U32) & Ws:
+  match done:
+    case True{}:
+      (iter.fin(n, (m, s0)), ws)
+    case False{}:
+      par.h(ws, p, d, alpha, beta, n, o, chk, best, mn, nw, s0, m[S.BUDGET()])
+
+def par.f?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+           +best: U32, +mn: U32, +nw: U32, +s0: U32, r: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +st) = r
+  par.g(m, ws, p, d, alpha, beta, n, o, chk, best, mn, nw, s0, U32.is_ne(st, 0) || C.s.ge(s0, beta))
+
+def par.e?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+           +best: U32, +mn: U32, +nw: U32, r: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +s0) = r
+  par.f(ws, p, d, alpha, beta, n, o, chk, best, mn, nw, s0, m[S.STOP()])
+
+def par.d?(m: Array<U32>, ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +n: U32, +o: S.Opt, +chk: Bool,
+           +best: U32, +mn: U32, +nw: U32, go: Bool) -> (Array<U32> & U32) & Ws:
+  match go:
+    case False{}:
+      (iter.fin(n, it.loop(m, wrt(p, d, beta, n, o, chk, best, mn, 1, 0), 0, alpha, NEGINF())), ws)
+    case True{}:
+      par.e(ws, p, d, alpha, beta, n, o, chk, best, mn, nw,
+        it.loop(m, wrt(p, d, beta, 1, o, chk, best, mn, 1, 0), 0, alpha, NEGINF()))
+
+def par.c?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, +n: U32, +best: U32,
+           r: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +mn) = r
+  +nw = nworkers(S.Opt.th(o))
+  par.d(m, ws, p, d, alpha, beta, n, o, chk, best, mn, nw, U32.is_gt(nw, 1) && U32.is_gt(n, 2) && U32.is_ge(d, 5))
+
+def par.b?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, +n: U32,
+           r: Array<U32> & U32) -> (Array<U32> & U32) & Ws:
+  (m, +best) = r
+  par.c(ws, p, d, alpha, beta, o, chk, n, best, mean(m, 0, n, 0))
+
+def par.a?(ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool, r: Array<U32> & U32) ->
+  (Array<U32> & U32) & Ws:
+  (m, +n) = r
+  par.b(ws, p, d, alpha, beta, o, chk, n, m[rslot(0, 1)])
+
+# one root iteration, parallel when Threads > 1 (see above)
+def iter.par?(m: Array<U32>, ws: Ws, +p: B.Pos, +d: U32, +alpha: U32, +beta: U32, +o: S.Opt, +chk: Bool) ->
+  (Array<U32> & U32) & Ws:
+  m[B.PVLEN()] <- 0
+  par.a(ws, p, d, alpha, beta, o, chk, m[RN()])

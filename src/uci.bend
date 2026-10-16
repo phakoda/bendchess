@@ -53,13 +53,6 @@ def gp.set(g: Gp, key: String, +v: U32) -> Gp:
         C.sel(str.eq(k, "depth"), v, depth), C.sel(str.eq(k, "nodes"), v, nodes),
         inf || str.eq(k, "infinite")}
 
-def go.parse.b?(k: String, +v: String, rest: List<&2, String>, g: Gp, single: Bool) -> Gp:
-  match single:
-    case True{}:
-      go.parse(Con{v, rest}, g)
-    case False{}:
-      go.parse(rest, g)
-
 def go.parse?(toks: List<&2, String>, g: Gp) -> Gp:
   match toks:
     case Nil{}:
@@ -68,6 +61,13 @@ def go.parse?(toks: List<&2, String>, g: Gp) -> Gp:
       gp.set(g, k, 0)
     case Con{+k, Con{+v, rest}}:
       go.parse.b(k, v, rest, gp.set(g, k, B.str.u32(v, 0)), str.eq(k, "infinite"))
+
+def go.parse.b?(k: String, +v: String, rest: List<&2, String>, g: Gp, single: Bool) -> Gp:
+  match single:
+    case True{}:
+      go.parse(Con{v, rest}, g)
+    case False{}:
+      go.parse(rest, g)
 
 def BIG() -> U32:
   4000000000
@@ -136,13 +136,6 @@ def score.str.go(+s: U32, win: Bool, loss: Bool) -> String:
 def score.str(+s: U32) -> String:
   score.str.go(s, C.s.ge(s, C.MATE_BOUND()), C.s.le(s, C.s.neg(C.MATE_BOUND())))
 
-def pv.str.go?(m: Array<U32>, +k: U32, +len: U32, acc: String, go: Bool) -> Array<U32> & String:
-  match go:
-    case False{}:
-      (m, acc)
-    case True{}:
-      pv.str.b(k, len, acc, m[U32.add(B.PVT(), k)])
-
 def pv.str?(m: Array<U32>, +k: U32, +len: U32, acc: String) -> Array<U32> & String:
   pv.str.go(m, k, len, acc, U32.is_lt(k, len))
 
@@ -150,43 +143,56 @@ def pv.str.b?(+k: U32, +len: U32, acc: String, r: Array<U32> & U32) -> Array<U32
   (m, +mv) = r
   pv.str(m, U32.add(k, 1), len, acc ++ " " ++ B.mv.uci(mv))
 
+def pv.str.go?(m: Array<U32>, +k: U32, +len: U32, acc: String, go: Bool) -> Array<U32> & String:
+  match go:
+    case False{}:
+      (m, acc)
+    case True{}:
+      pv.str.b(k, len, acc, m[U32.add(B.PVT(), k)])
+
 def asp.res?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32,
-             r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +s) = r
-  asp.res.b(p, d, chk, o, a, b, delta, s, S.stopped(m))
+             r: (Array<U32> & U32) & R.Ws) -> (Array<U32> & U32) & R.Ws:
+  (ms, ws) = r
+  asp.res.m(p, d, chk, o, a, b, delta, ws, ms)
 
 # Aspiration windows
 # ------------------
 # search the root in (prev - delta, prev + delta); on a fail, widen that
 # side (delta * 4) until the score is inside or the window is infinite.
 
-def asp.go?(m: Array<U32>, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32,
-            +delta: U32) -> Array<U32> & U32:
-  asp.res(p, d, chk, o, a, b, delta, R.iter(m, p, d, a, b, o, chk))
+def asp.go?(m: Array<U32>, ws: R.Ws, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32,
+            +delta: U32) -> (Array<U32> & U32) & R.Ws:
+  asp.res(p, d, chk, o, a, b, delta, R.iter.par(m, ws, p, d, a, b, o, chk))
 
-def asp.again?(m: Array<U32>, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +s: U32, done: Bool,
-               +a: U32, +b: U32, +delta: U32) -> Array<U32> & U32:
+def asp.again?(m: Array<U32>, ws: R.Ws, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +s: U32, done: Bool,
+               +a: U32, +b: U32, +delta: U32) -> (Array<U32> & U32) & R.Ws:
   match done:
     case True{}:
-      (m, s)
+      ((m, s), ws)
     case False{}:
-      asp.go(m, p, d, chk, o, a, b, delta)
+      asp.go(m, ws, p, d, chk, o, a, b, delta)
 
-def asp.res.b?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32, +s: U32,
-               r: Array<U32> & Bool) -> Array<U32> & U32:
+def asp.res.b?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32, +s: U32, ws: R.Ws,
+               r: Array<U32> & Bool) -> (Array<U32> & U32) & R.Ws:
   (m, stop) = r
   +inf = C.INF()
   +low = C.s.le(s, a) && C.s.gt(a, C.s.neg(inf))
   +high = C.s.ge(s, b) && C.s.lt(b, inf)
   +d2 = U32.mul(delta, 4)
   +wide = U32.is_gt(d2, 1000)
-  asp.again(m, p, d, chk, o, s, stop || Bool.not(low || high),
+  asp.again(m, ws, p, d, chk, o, s, stop || Bool.not(low || high),
     C.sel(low, C.sel(wide, C.s.neg(inf), C.s.max(U32.sub(s, d2), C.s.neg(inf))), a),
     C.sel(high, C.sel(wide, inf, C.s.min(U32.add(s, d2), inf)), b), d2)
 
-def aspire(m: Array<U32>, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +prev: U32) -> Array<U32> & U32:
+def asp.res.m?(+p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +a: U32, +b: U32, +delta: U32, ws: R.Ws,
+               r: Array<U32> & U32) -> (Array<U32> & U32) & R.Ws:
+  (m, +s) = r
+  asp.res.b(p, d, chk, o, a, b, delta, s, ws, S.stopped(m))
+
+def aspire(m: Array<U32>, ws: R.Ws, +p: B.Pos, +d: U32, +chk: Bool, +o: S.Opt, +prev: U32) ->
+  (Array<U32> & U32) & R.Ws:
   +narrow = U32.is_ge(d, 4) && C.s.lt(C.s.abs(prev), 2000)
-  asp.go(m, p, d, chk, o, C.sel(narrow, U32.sub(prev, 30), C.s.neg(C.INF())),
+  asp.go(m, ws, p, d, chk, o, C.sel(narrow, U32.sub(prev, 30), C.s.neg(C.INF())),
     C.sel(narrow, U32.add(prev, 30), C.INF()), 30)
 
 # Iterative deepening
@@ -304,30 +310,25 @@ def id.more(+cas: U32, +ss: U32, +tp: U32, +eff: U32, +d: U32, +s: U32, +score0:
   +fits = U32.is_lt(d, 4) || U32.is_ge(Lim.hard(lim), BIG()) || U32.is_le(U32.add(ms, pred_ms), Lim.hard(lim))
   more.pick(U32.is_zero(cas), base && U32.is_lt(ms, soft0), base && U32.is_lt(ms, soft2) && fits)
 
-# after iteration d: report, then decide whether to go deeper
-def id.after?(+d: U32, +budget: U32, +s: U32, dr: Dr, +now: Nat, r: Array<U32> & String) ->
-  IO(Array<U32> & (U32 & U32)):
-  match dr:
-    case Dr{+p, +o, +lim, +t0, +chk, +used0, +best0, +score0, +npms0, +verbose, +sp, +stab}:
-      (m, pv) = r
-      id.after.b(d, budget, s, p, o, lim, t0, chk, used0, best0, score0, npms0, verbose, sp, stab, now, pv,
-        it.read(m))
-
-def id.done.c?(+d: U32, +budget: U32, +s: U32, dr: Dr, +now: Nat, r: Array<U32> & U32) ->
+def id.done.c?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & U32) ->
   IO(Array<U32> & (U32 & U32)):
   (m, +len) = r
-  id.after(d, budget, s, dr, now, pv.str(m, 0, len, ""))
+  id.after(d, budget, s, dr, ws, now, pv.str(m, 0, len, ""))
 
-def id.done.b?(+d: U32, +budget: U32, +s: U32, dr: Dr, m: Array<U32>, now: Nat) ->
+def id.done.b?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, m: Array<U32>, now: Nat) ->
   IO(Array<U32> & (U32 & U32)):
-  id.done.c(d, budget, s, dr, now, mem.read(m, B.PVLEN()))
+  id.done.c(d, budget, s, dr, ws, now, mem.read(m, B.PVLEN()))
 
-def id.done?(+d: U32, +budget: U32, dr: Dr, r: Array<U32> & U32) -> IO(Array<U32> & (U32 & U32)):
+def id.done.m?(+d: U32, +budget: U32, dr: Dr, ws: R.Ws, r: Array<U32> & U32) -> IO(Array<U32> & (U32 & U32)):
   (m, +s) = r
-  IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.done.b(d, budget, s, dr, m))
+  IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.done.b(d, budget, s, dr, ws, m))
+
+def id.done?(+d: U32, +budget: U32, dr: Dr, r: (Array<U32> & U32) & R.Ws) -> IO(Array<U32> & (U32 & U32)):
+  (ms, ws) = r
+  id.done.m(d, budget, dr, ws, ms)
 
 # run iteration d with a budget derived from the time left
-def id.iter.t?(m: Array<U32>, +d: U32, dr: Dr, now: Nat) -> IO(Array<U32> & (U32 & U32)):
+def id.iter.t?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, now: Nat) -> IO(Array<U32> & (U32 & U32)):
   match dr:
     case Dr{+p, +o, +lim, +t0, +chk, +used, +best, +score, +npms, +verbose, +sp, +stab}:
       +nt = S.Opt.nt(o)
@@ -337,9 +338,9 @@ def id.iter.t?(m: Array<U32>, +d: U32, dr: Dr, now: Nat) -> IO(Array<U32> & (U32
       +by_nodes = S.sub0(Lim.nodes(lim), used)
       +budget = U32.max(U32.min(by_time, by_nodes), C.sel(U32.is_eq(d, 1), 2000, 1))
       id.done(d, budget, Dr{p, o, lim, t0, chk, used, best, score, npms, verbose, sp, stab},
-        aspire(budget.set(m, budget), p, d, chk, o, score))
+        aspire(budget.set(m, budget), ws, p, d, chk, o, score))
 
-def id.next?(m: Array<U32>, +d: U32, dr: Dr, more: Bool) -> IO(Array<U32> & (U32 & U32)):
+def id.next?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr, more: Bool) -> IO(Array<U32> & (U32 & U32)):
   match more:
     case False{}:
       Dr.fin(m, dr)
@@ -347,11 +348,11 @@ def id.next?(m: Array<U32>, +d: U32, dr: Dr, more: Bool) -> IO(Array<U32> & (U32
       # through IO.bind (a closure call), not a direct call: a direct call
       # here makes Bend 2.0.37 emit a fused C function before its
       # declaration (see docs/BEND_NOTES.md)
-      IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.iter.t(m, U32.add(d, 1), dr))
+      IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.iter.t(m, ws, U32.add(d, 1), dr))
 
 def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat,
                 +chk: Bool, +used0: U32, +best0: U32, +score0: U32, +npms0: U32, +verbose: Bool,
-                +sp: U32, +stab: U32, +now: Nat, pv: String, r: Array<U32> & It) -> IO(Array<U32> & (U32 & U32)):
+                +sp: U32, +stab: U32, +now: Nat, pv: String, ws: R.Ws, r: Array<U32> & It) -> IO(Array<U32> & (U32 & U32)):
   (m, it) = r
   match it:
     case It{+left, +stop, +best, +pvlen, +seld, +eff}:
@@ -370,15 +371,24 @@ def id.after.b?(+d: U32, +budget: U32, +s: U32, +p: B.Pos, +o: S.Opt, +lim: Lim,
       do IO<Array<U32> & (U32 & U32)>:
         say(verbose && (Bool.not(stop) || U32.is_eq(d, 1)), id.info(d, s, used, ms, seld, pv))
         say(verbose && Bool.not(more), "info nodes " ++ U32.show(used) ++ " time " ++ U32.show(ms))
-        id.next(m, d, Dr{p, o, lim, t0, chk, used, best2, score2, npms, verbose, spent, stab2}, more)
+        id.next(m, ws, d, Dr{p, o, lim, t0, chk, used, best2, score2, npms, verbose, spent, stab2}, more)
 
-def id.iter?(m: Array<U32>, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
-  IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.iter.t(m, d, dr))
+# after iteration d: report, then decide whether to go deeper
+def id.after?(+d: U32, +budget: U32, +s: U32, dr: Dr, ws: R.Ws, +now: Nat, r: Array<U32> & String) ->
+  IO(Array<U32> & (U32 & U32)):
+  match dr:
+    case Dr{+p, +o, +lim, +t0, +chk, +used0, +best0, +score0, +npms0, +verbose, +sp, +stab}:
+      (m, pv) = r
+      id.after.b(d, budget, s, p, o, lim, t0, chk, used0, best0, score0, npms0, verbose, sp, stab, now, pv, ws,
+        it.read(m))
+
+def id.iter?(m: Array<U32>, ws: R.Ws, +d: U32, dr: Dr) -> IO(Array<U32> & (U32 & U32)):
+  IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), id.iter.t(m, ws, d, dr))
 
 def think.root(+p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat, +verbose: Bool, +chk: Bool, r: Array<U32> & U32) ->
   IO(Array<U32> & (U32 & U32)):
   (m, +n) = r
-  id.iter(m, 1, Dr{p, o, lim, t0, chk, 0, 0, 0, 500, verbose, 0, 0})
+  id.iter(m, R.Ws.new(S.Opt.th(o)), 1, Dr{p, o, lim, t0, chk, 0, 0, 0, 500, verbose, 0, 0})
 
 def think.go(+p: B.Pos, +o: S.Opt, +lim: Lim, +t0: Nat, +verbose: Bool, r: Array<U32> & Bool) ->
   IO(Array<U32> & (U32 & U32)):
@@ -393,14 +403,6 @@ def think.t(m: Array<U32>, +p: B.Pos, +o: S.Opt, +lim: Lim, +verbose: Bool, t0: 
 def think(m: Array<U32>, +p: B.Pos, +o: S.Opt, +lim: Lim, +verbose: Bool) ->
   IO(Array<U32> & (U32 & U32)):
   IO.bind(Nat, Array<U32> & (U32 & U32), IO.now(), think.t(m, p, o, lim, verbose))
-
-# play UCI moves from p (stops at the first illegal one)
-def moves.apply?(m: Array<U32>, +p: B.Pos, toks: List<&2, String>) -> Array<U32> & B.Pos:
-  match toks:
-    case Nil{}:
-      (m, p)
-    case Con{s, rest}:
-      moves.apply.a(p, rest, G.find_move(m, p, s, 0))
 
 # Position command
 # ----------------
@@ -421,16 +423,17 @@ def moves.apply.a?(+p: B.Pos, rest: List<&2, String>, r: Array<U32> & U32) -> Ar
   (m, +mv) = r
   moves.apply.c(m, p, mv, rest, U32.is_zero(mv))
 
+# play UCI moves from p (stops at the first illegal one)
+def moves.apply?(m: Array<U32>, +p: B.Pos, toks: List<&2, String>) -> Array<U32> & B.Pos:
+  match toks:
+    case Nil{}:
+      (m, p)
+    case Con{s, rest}:
+      moves.apply.a(p, rest, G.find_move(m, p, s, 0))
+
 def until.moves.c(h: String, r: List<&2, String> & List<&2, String>) -> List<&2, String> & List<&2, String>:
   (a, b) = r
   (Con{h, a}, b)
-
-def until.moves.b?(h: String, t: List<&2, String>, stop: Bool) -> List<&2, String> & List<&2, String>:
-  match stop:
-    case True{}:
-      (Nil{}, t)
-    case False{}:
-      until.moves.c(h, until.moves(t))
 
 # split tokens at "moves": (before, after)
 def until.moves?(toks: List<&2, String>) -> List<&2, String> & List<&2, String>:
@@ -439,6 +442,13 @@ def until.moves?(toks: List<&2, String>) -> List<&2, String> & List<&2, String>:
       (Nil{}, Nil{})
     case Con{+h, t}:
       until.moves.b(h, t, str.eq(h, "moves"))
+
+def until.moves.b?(h: String, t: List<&2, String>, stop: Bool) -> List<&2, String> & List<&2, String>:
+  match stop:
+    case True{}:
+      (Nil{}, t)
+    case False{}:
+      until.moves.c(h, until.moves(t))
 
 def pos.fen.b(mvs: List<&2, String>, r: Array<U32> & B.Pos) -> Array<U32> & B.Pos:
   (m, +p) = r
@@ -480,6 +490,13 @@ def line.cons(+c: Char, r: Maybe<&1, String & String>) -> Maybe<&1, String & Str
     case Some{(l, rest)}:
       Some{(SCon{c, l}, rest)}
 
+def line.at?(+c: Char, rest: String, nl: Bool) -> Maybe<&1, String & String>:
+  match nl:
+    case True{}:
+      Some{(SNil{}, rest)}
+    case False{}:
+      line.cons(c, line.split(rest))
+
 # the first line of s (without its newline) and the rest, if s has a newline
 def line.split?(s: String) -> Maybe<&1, String & String>:
   match s:
@@ -487,13 +504,6 @@ def line.split?(s: String) -> Maybe<&1, String & String>:
       None{}
     case SCon{+c, rest}:
       line.at(c, rest, U32.is_eq(Char.to_u32(c), 10))
-
-def line.at?(+c: Char, rest: String, nl: Bool) -> Maybe<&1, String & String>:
-  match nl:
-    case True{}:
-      Some{(SNil{}, rest)}
-    case False{}:
-      line.cons(c, line.split(rest))
 
 def line.clean.c(+c: Char, rest: String, cr: Bool, tab: Bool) -> String:
   match cr tab:
@@ -543,6 +553,7 @@ def uci.id() -> IO(Unit):
     IO.print("option name SyzygyPath type string default <empty>")
     IO.print("option name SoftScale type spin default 100 min 10 max 1000")
     IO.print("option name TimePolicy type spin default 1 min 1 max 2")
+    IO.print("option name Threads type spin default 1 min 1 max 4")
     IO.print("uciok")
 
 def opt.bool(v: String) -> Bool:
@@ -557,7 +568,7 @@ def opt.pick(c: Bool, a: Bool, b: Bool) -> Bool:
 
 def opt.set.b(o: S.Opt, +name: String, +v: String) -> S.Opt:
   match o:
-    case S.Opt{null, lmr, prune, cas, evm, nt, ss, tp}:
+    case S.Opt{null, lmr, prune, cas, evm, nt, ss, tp, th}:
       S.Opt{opt.pick(str.eq(name, "NullMove"), opt.bool(v), null),
         opt.pick(str.eq(name, "LMR"), opt.bool(v), lmr),
         opt.pick(str.eq(name, "Pruning"), opt.bool(v), prune),
@@ -565,7 +576,8 @@ def opt.set.b(o: S.Opt, +name: String, +v: String) -> S.Opt:
         C.sel(str.eq(name, "EvalMode"), B.str.u32(v, 0), evm),
         C.sel(str.eq(name, "NodesTime"), B.str.u32(v, 0), nt),
         C.sel(str.eq(name, "SoftScale"), B.str.u32(v, 100), ss),
-        C.sel(str.eq(name, "TimePolicy"), B.str.u32(v, 1), tp)}
+        C.sel(str.eq(name, "TimePolicy"), B.str.u32(v, 1), tp),
+        C.sel(str.eq(name, "Threads"), B.str.u32(v, 1), th)}
 
 # setoption name <N> value <V>
 def opt.set(o: S.Opt, toks: List<&2, String>) -> S.Opt:
@@ -586,13 +598,6 @@ def cmd.code(+c: String) -> U32:
 def TBPATH() -> U32:
   U32.add(B.SC(), 256)
 
-def mstr.get.b?(m: Array<U32>, +base: U32, +k: U32, acc: String, done: Bool) -> Array<U32> & String:
-  match done:
-    case True{}:
-      (m, acc)
-    case False{}:
-      mstr.get.c(base, k, acc, m[U32.add(base, k)])
-
 def mstr.get.go?(m: Array<U32>, +base: U32, +k: U32, acc: String) -> Array<U32> & String:
   mstr.get.b(m, base, k, acc, U32.is_zero(k))
 
@@ -600,18 +605,19 @@ def mstr.get.c?(+base: U32, +k: U32, acc: String, r: Array<U32> & U32) -> Array<
   (m, +c) = r
   mstr.get.go(m, base, U32.sub(k, 1), SCon{Chr{c}, acc})
 
+def mstr.get.b?(m: Array<U32>, +base: U32, +k: U32, acc: String, done: Bool) -> Array<U32> & String:
+  match done:
+    case True{}:
+      (m, acc)
+    case False{}:
+      mstr.get.c(base, k, acc, m[U32.add(base, k)])
+
 def mstr.get.a?(+base: U32, r: Array<U32> & U32) -> Array<U32> & String:
   (m, +len) = r
   mstr.get.go(m, base, U32.min(len, 1000), SNil{})
 
 def mstr.get(m: Array<U32>, +base: U32) -> Array<U32> & String:
   mstr.get.a(base, m[base])
-
-def uci.go.search?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>, +conv: String) ->
-  IO(Unit):
-  IO.bind(Array<U32> & (U32 & U32), Unit,
-    think(m, p, o, go.limits(go.parse(toks, Gp.empty()), B.P.side(p)), True{}),
-    r => go.out(o, f, buf, conv, r, p))
 
 def HELPER() -> U32:
   U32.add(B.SC(), 1280)
@@ -1079,12 +1085,11 @@ def go.out?(+o: S.Opt, f: File, buf: String, +conv: String, r: Array<U32> & (U32
   (m, bs) = r
   go.out.b(o, f, buf, conv, m, p, bs)
 
-def path.drop?(s: String) -> String:
-  match s:
-    case SNil{}:
-      SNil{}
-    case SCon{+c, rest}:
-      path.drop.b(rest, U32.is_eq(Char.to_u32(c), 47))
+def uci.go.search?(m: Array<U32>, +p: B.Pos, +o: S.Opt, f: File, buf: String, toks: List<&2, String>, +conv: String) ->
+  IO(Unit):
+  IO.bind(Array<U32> & (U32 & U32), Unit,
+    think(m, p, o, go.limits(go.parse(toks, Gp.empty()), B.P.side(p)), True{}),
+    r => go.out(o, f, buf, conv, r, p))
 
 def path.drop.b?(rest: String, slash: Bool) -> String:
   match slash:
@@ -1092,6 +1097,13 @@ def path.drop.b?(rest: String, slash: Bool) -> String:
       rest
     case False{}:
       path.drop(rest)
+
+def path.drop?(s: String) -> String:
+  match s:
+    case SNil{}:
+      SNil{}
+    case SCon{+c, rest}:
+      path.drop.b(rest, U32.is_eq(Char.to_u32(c), 47))
 
 # the directory part of a path ("" when there is none)
 def path.parent(s: String) -> String:
