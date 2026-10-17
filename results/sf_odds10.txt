@@ -1,0 +1,77 @@
+game   2 A=black 1-0     checkmate              plies= 47 | A: +0 =0 -1 score 0.000
+game   3 A=white 0-1     checkmate              plies=108 | A: +0 =0 -2 score 0.000
+game   1 A=white 0-1     checkmate              plies=140 | A: +0 =0 -3 score 0.000
+game   5 A=white 0-1     checkmate              plies=106 | A: +0 =0 -4 score 0.000
+game   4 A=black 1/2-1/2 threefold_repetition   plies=188 | A: +0 =1 -4 score 0.100
+game   8 A=black 1-0     checkmate              plies= 49 | A: +0 =1 -5 score 0.083
+game   7 A=white 0-1     checkmate              plies=108 | A: +0 =1 -6 score 0.071
+game  10 A=black 1/2-1/2 threefold_repetition   plies= 51 | A: +0 =2 -6 score 0.125
+game   9 A=white 0-1     checkmate              plies= 66 | A: +0 =2 -7 score 0.111
+game   6 A=black 1-0     checkmate              plies=163 | A: +0 =2 -8 score 0.100
+game  14 A=black 1-0     checkmate              plies=109 | A: +0 =2 -9 score 0.091
+game  11 A=white 0-1     checkmate              plies=126 | A: +0 =2 -10 score 0.083
+game  12 A=black 1-0     checkmate              plies=145 | A: +0 =2 -11 score 0.077
+game  13 A=white 0-1     checkmate              plies=158 | A: +0 =2 -12 score 0.071
+game  16 A=black 1-0     checkmate              plies=119 | A: +0 =2 -13 score 0.067
+game  15 A=white 1/2-1/2 threefold_repetition   plies=135 | A: +0 =3 -13 score 0.094
+game  17 A=white 0-1     checkmate              plies=126 | A: +0 =3 -14 score 0.088
+game  18 A=black 1-0     checkmate              plies=117 | A: +0 =3 -15 score 0.083
+game  19 A=white 0-1     checkmate              plies= 80 | A: +0 =3 -16 score 0.079
+game  20 A=black 1-0     checkmate              plies= 77 | A: +0 =3 -17 score 0.075
+game  22 A=black 1-0     checkmate              plies= 73 | A: +0 =3 -18 score 0.071
+game  23 A=white 0-1     checkmate              plies=110 | A: +0 =3 -19 score 0.068
+game  21 A=white 0-1     checkmate              plies=154 | A: +0 =3 -20 score 0.065
+game  24 A=black 1-0     checkmate              plies=113 | A: +0 =3 -21 score 0.062
+game  25 A=white 0-1     checkmate              plies=118 | A: +0 =3 -22 score 0.060
+game  27 A=white 0-1     checkmate              plies= 80 | A: +0 =3 -23 score 0.058
+game  26 A=black 1-0     checkmate              plies=107 | A: +0 =3 -24 score 0.056
+game  28 A=black 1-0     checkmate              plies=151 | A: +0 =3 -25 score 0.054
+game  30 A=black 1-0     checkmate              plies=101 | A: +0 =3 -26 score 0.052
+game  29 A=white 0-1     checkmate              plies=146 | A: +0 =3 -27 score 0.050
+game  31 A=white 0-1     checkmate              plies=164 | A: +0 =3 -28 score 0.048
+game  32 A=black 1-0     checkmate              plies=105 | A: +0 =3 -29 score 0.047
+game  34 A=black 1-0     checkmate              plies=127 | A: +0 =3 -30 score 0.045
+game  33 A=white 0-1     checkmate              plies=142 | A: +0 =3 -31 score 0.044
+game  36 A=black 1-0     checkmate              plies=109 | A: +0 =3 -32 score 0.043
+game  35 A=white 0-1     checkmate              plies=126 | A: +0 =3 -33 score 0.042
+game  38 A=black 1-0     checkmate              plies= 79 | A: +0 =3 -34 score 0.041
+game  37 A=white 0-1     checkmate              plies= 94 | A: +0 =3 -35 score 0.039
+game  40 A=black 1-0     checkmate              plies=113 | A: +0 =3 -36 score 0.038
+game  39 A=white 0-1     checkmate              plies=140 | A: +0 =3 -37 score 0.037
+{
+ "games": 40,
+ "wins": 0,
+ "draws": 3,
+ "losses": 37,
+ "score": 0.0375,
+ "elo": -563.7477881811278,
+ "elo_lo": -2399.9998262821205,
+ "elo_hi": -428.30005318579003,
+ "preliminary": true,
+ "pairs": 20,
+ "elo_lo_pairs": -2399.9998262821205,
+ "elo_hi_pairs": -429.92664534377224,
+ "distinct_games": 40,
+ "a": "build/t_final",
+ "b": "sf",
+ "limits": {
+  "nodes": 0,
+  "nodes2": 0,
+  "movetime": 1200,
+  "movetime2": 120,
+  "tc": ""
+ },
+ "a_avg_depth": 11.506590509666081,
+ "a_avg_nodes": 311475.2381370826,
+ "a_avg_time": 0.7428808075053411,
+ "b_avg_depth": 28.80165649520488,
+ "b_avg_nodes": 84282.2593722755,
+ "b_avg_time": 0.11833025771010515,
+ "a_total_nodes": 708917642,
+ "b_total_nodes": 193343503,
+ "wall_seconds": 521.6774027347565,
+ "terminations": {
+  "checkmate": 37,
+  "threefold_repetition": 3
+ }
+}
