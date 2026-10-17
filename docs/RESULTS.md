@@ -148,6 +148,27 @@ FIDE rating). Caveats: a strength-limited Stockfish is not Carlsen (it
 neither plays his openings nor errs like a human), and UCI_Elo is
 calibrated against engine rating lists, not FIDE.
 
+### 8.1 Phase 2 re-measurement (final defaults: EvalMode 0, TimePolicy 3)
+
+Same openings and setup (1 thread each, 4 games in parallel on 4 cores):
+
+| Opponent | TC | Games | W / D / L | Score | Elo diff (95%) | Wall time |
+|---|---|---|---|---|---|---|
+| SF16 UCI_Elo 2850 (Magnus proxy) | 60 + 0.6 | 100 | **17 / 52 / 31** | 43.0% | **-49** [-97, -2] | 85 min |
+| SF16 UCI_Elo 3190 (top of SF's calibrated range) | 60 + 0.6 | 100 | 1 / 33 / 66 | 17.5% | -269 [-336, -216] | 75 min |
+| SF16 full strength | 60 + 0.6 | 40 | 0 / 5 / 35 | 6.3% | about -470 (lower bound, too few points) | 28 min |
+| SF16 full strength at 10:1 time odds (0.12 s vs 1.2 s per move) | fixed time | 40 | 0 / 3 / 37 | 3.8% | about -560 (lower bound) | 9 min |
+
+Against the proxy the phase-2 engine improved from 10 / 41 / 49
+(-143) to 17 / 52 / 31 (-49), i.e. about +95 Elo. On Stockfish's UCI_Elo
+scale the two anchors give ~2800 [2750, 2850] (from 2850) and ~2920
+[2855, 2975] (from 3190); the intervals do not overlap, so the
+strength-limited levels are not mutually consistent against this engine
+(the limited Stockfish weakens itself with random errors, which is not
+the same as a lower-rated engine). A fair summary is "roughly 2800-2900
+on Stockfish's engine-calibrated UCI_Elo scale" - not a FIDE rating.
+Full-strength Stockfish wins almost every game, even with 10x less time.
+
 ## 9. Phase 2: the five listed improvements and further fundamentals
 
 Every change below was A/B-tested (400 games, 200 book openings x 2
@@ -225,8 +246,9 @@ tests: **30/30** (adds Threads 2/4, TimePolicy 2/3, Practical). Tactics:
 
 ## 10. Known limitations
 
-* Strength: see section 8 (phase-1 and phase-2 runs vs the Stockfish
-  UCI_Elo 2850 proxy); easily beatable by full-strength engines.
+* Strength: about 2800-2900 on Stockfish's UCI_Elo scale (section 8.1);
+  full-strength Stockfish 16 scores 35.5/40 at equal time and 38.5/40
+  while using 10x less time.
 * Node rate: the phase-2 search is +114 Elo better at equal nodes but
   costs ~1.5x the instructions per node of the phase-1 engine, so at a
   very short time control (5 s + 0.05 s) the net gain is small
