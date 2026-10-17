@@ -1,0 +1,139 @@
+game   2 A=black 1/2-1/2 threefold_repetition   plies= 92 | A: +0 =1 -0 score 0.500
+game   1 A=white 0-1     checkmate              plies=110 | A: +0 =1 -1 score 0.250
+game   4 A=black 1-0     checkmate              plies=161 | A: +0 =1 -2 score 0.167
+game   3 A=white 0-1     checkmate              plies=176 | A: +0 =1 -3 score 0.125
+game   6 A=black 1/2-1/2 threefold_repetition   plies= 78 | A: +0 =2 -3 score 0.200
+game   5 A=white 1/2-1/2 threefold_repetition   plies=159 | A: +0 =3 -3 score 0.250
+game   8 A=black 1/2-1/2 threefold_repetition   plies=106 | A: +0 =4 -3 score 0.286
+game   7 A=white 0-1     checkmate              plies=134 | A: +0 =4 -4 score 0.250
+game  11 A=white 1/2-1/2 threefold_repetition   plies= 77 | A: +0 =5 -4 score 0.278
+game   9 A=white 1/2-1/2 threefold_repetition   plies=167 | A: +0 =6 -4 score 0.300
+game  10 A=black 1-0     checkmate              plies=219 | A: +0 =6 -5 score 0.273
+game  12 A=black 1-0     checkmate              plies=191 | A: +0 =6 -6 score 0.250
+game  13 A=white 0-1     checkmate              plies=100 | A: +0 =6 -7 score 0.231
+game  15 A=white 0-1     checkmate              plies=110 | A: +0 =6 -8 score 0.214
+game  14 A=black 1-0     checkmate              plies=205 | A: +0 =6 -9 score 0.200
+game  16 A=black 1-0     checkmate              plies=155 | A: +0 =6 -10 score 0.188
+game  17 A=white 0-1     checkmate              plies= 96 | A: +0 =6 -11 score 0.176
+game  18 A=black 1-0     checkmate              plies= 73 | A: +0 =6 -12 score 0.167
+game  20 A=black 1-0     checkmate              plies=129 | A: +0 =6 -13 score 0.158
+game  19 A=white 0-1     checkmate              plies=178 | A: +0 =6 -14 score 0.150
+game  21 A=white 0-1     checkmate              plies=108 | A: +0 =6 -15 score 0.143
+game  22 A=black 1-0     checkmate              plies=123 | A: +0 =6 -16 score 0.136
+game  25 A=white 0-1     checkmate              plies= 98 | A: +0 =6 -17 score 0.130
+game  23 A=white 0-1     checkmate              plies=162 | A: +0 =6 -18 score 0.125
+game  24 A=black 1-0     checkmate              plies=165 | A: +0 =6 -19 score 0.120
+game  26 A=black 1-0     checkmate              plies= 99 | A: +0 =6 -20 score 0.115
+game  28 A=black 1/2-1/2 threefold_repetition   plies= 34 | A: +0 =7 -20 score 0.130
+game  27 A=white 1/2-1/2 threefold_repetition   plies=123 | A: +0 =8 -20 score 0.143
+game  29 A=white 1/2-1/2 fifty_moves            plies=194 | A: +0 =9 -20 score 0.155
+game  30 A=black 1-0     checkmate              plies=165 | A: +0 =9 -21 score 0.150
+game  31 A=white 0-1     checkmate              plies=214 | A: +0 =9 -22 score 0.145
+game  32 A=black 1-0     checkmate              plies=135 | A: +0 =9 -23 score 0.141
+game  33 A=white 0-1     checkmate              plies= 82 | A: +0 =9 -24 score 0.136
+game  34 A=black 1/2-1/2 threefold_repetition   plies=122 | A: +0 =10 -24 score 0.147
+game  35 A=white 0-1     checkmate              plies=152 | A: +0 =10 -25 score 0.143
+game  36 A=black 1-0     checkmate              plies=157 | A: +0 =10 -26 score 0.139
+game  37 A=white 0-1     checkmate              plies=144 | A: +0 =10 -27 score 0.135
+game  38 A=black 1-0     checkmate              plies= 69 | A: +0 =10 -28 score 0.132
+game  39 A=white 1/2-1/2 threefold_repetition   plies=135 | A: +0 =11 -28 score 0.141
+game  40 A=black 1/2-1/2 threefold_repetition   plies=136 | A: +0 =12 -28 score 0.150
+game  41 A=white 0-1     checkmate              plies=152 | A: +0 =12 -29 score 0.146
+game  42 A=black 1/2-1/2 threefold_repetition   plies=126 | A: +0 =13 -29 score 0.155
+game  43 A=white 0-1     checkmate              plies= 86 | A: +0 =13 -30 score 0.151
+game  44 A=black 1/2-1/2 threefold_repetition   plies=120 | A: +0 =14 -30 score 0.159
+game  46 A=black 1-0     checkmate              plies=149 | A: +0 =14 -31 score 0.156
+game  45 A=white 1/2-1/2 fifty_moves            plies=205 | A: +0 =15 -31 score 0.163
+game  47 A=white 0-1     checkmate              plies=142 | A: +0 =15 -32 score 0.160
+game  48 A=black 1-0     checkmate              plies=129 | A: +0 =15 -33 score 0.156
+game  49 A=white 0-1     checkmate              plies=114 | A: +0 =15 -34 score 0.153
+game  50 A=black 1-0     checkmate              plies=129 | A: +0 =15 -35 score 0.150
+game  51 A=white 0-1     checkmate              plies= 78 | A: +0 =15 -36 score 0.147
+game  52 A=black 1/2-1/2 threefold_repetition   plies= 92 | A: +0 =16 -36 score 0.154
+game  53 A=white 0-1     checkmate              plies= 98 | A: +0 =16 -37 score 0.151
+game  54 A=black 1/2-1/2 threefold_repetition   plies= 88 | A: +0 =17 -37 score 0.157
+game  55 A=white 0-1     checkmate              plies=104 | A: +0 =17 -38 score 0.155
+game  56 A=black 1/2-1/2 threefold_repetition   plies= 86 | A: +0 =18 -38 score 0.161
+game  58 A=black 1-0     checkmate              plies=109 | A: +0 =18 -39 score 0.158
+game  57 A=white 0-1     checkmate              plies=178 | A: +0 =18 -40 score 0.155
+game  60 A=black 1/2-1/2 threefold_repetition   plies=154 | A: +0 =19 -40 score 0.161
+game  59 A=white 1/2-1/2 threefold_repetition   plies=301 | A: +0 =20 -40 score 0.167
+game  61 A=white 0-1     checkmate              plies=116 | A: +0 =20 -41 score 0.164
+game  62 A=black 1-0     checkmate              plies=129 | A: +0 =20 -42 score 0.161
+game  63 A=white 0-1     checkmate              plies=168 | A: +0 =20 -43 score 0.159
+game  66 A=black 1/2-1/2 threefold_repetition   plies= 74 | A: +0 =21 -43 score 0.164
+game  64 A=black 1-0     checkmate              plies=163 | A: +0 =21 -44 score 0.162
+game  65 A=white 1/2-1/2 threefold_repetition   plies=133 | A: +0 =22 -44 score 0.167
+game  67 A=white 0-1     checkmate              plies= 68 | A: +0 =22 -45 score 0.164
+game  68 A=black 1-0     checkmate              plies= 49 | A: +0 =22 -46 score 0.162
+game  69 A=white 0-1     checkmate              plies=166 | A: +0 =22 -47 score 0.159
+game  70 A=black 1/2-1/2 threefold_repetition   plies=156 | A: +0 =23 -47 score 0.164
+game  71 A=white 1/2-1/2 threefold_repetition   plies=125 | A: +0 =24 -47 score 0.169
+game  72 A=black 1/2-1/2 threefold_repetition   plies=143 | A: +0 =25 -47 score 0.174
+game  73 A=white 1/2-1/2 threefold_repetition   plies=119 | A: +0 =26 -47 score 0.178
+game  74 A=black 1-0     checkmate              plies=169 | A: +0 =26 -48 score 0.176
+game  75 A=white 0-1     checkmate              plies=138 | A: +0 =26 -49 score 0.173
+game  76 A=black 1-0     checkmate              plies=155 | A: +0 =26 -50 score 0.171
+game  77 A=white 0-1     checkmate              plies=142 | A: +0 =26 -51 score 0.169
+game  78 A=black 1/2-1/2 threefold_repetition   plies= 58 | A: +0 =27 -51 score 0.173
+game  79 A=white 0-1     checkmate              plies=148 | A: +0 =27 -52 score 0.171
+game  80 A=black 1-0     checkmate              plies=101 | A: +0 =27 -53 score 0.169
+game  82 A=black 1/2-1/2 threefold_repetition   plies=102 | A: +0 =28 -53 score 0.173
+game  81 A=white 1/2-1/2 insufficient_material  plies=191 | A: +0 =29 -53 score 0.177
+game  84 A=black 1-0     checkmate              plies= 67 | A: +0 =29 -54 score 0.175
+game  83 A=white 0-1     checkmate              plies= 94 | A: +0 =29 -55 score 0.173
+game  85 A=white 1/2-1/2 threefold_repetition   plies= 83 | A: +0 =30 -55 score 0.176
+game  88 A=black 1-0     checkmate              plies= 83 | A: +0 =30 -56 score 0.174
+game  86 A=black 1-0     checkmate              plies=133 | A: +0 =30 -57 score 0.172
+game  87 A=white 0-1     checkmate              plies=152 | A: +0 =30 -58 score 0.170
+game  89 A=white 0-1     checkmate              plies=140 | A: +0 =30 -59 score 0.169
+game  90 A=black 1/2-1/2 threefold_repetition   plies= 76 | A: +0 =31 -59 score 0.172
+game  91 A=white 0-1     checkmate              plies=176 | A: +0 =31 -60 score 0.170
+game  92 A=black 1-0     checkmate              plies=171 | A: +0 =31 -61 score 0.168
+game  94 A=black 0-1     checkmate              plies=112 | A: +1 =31 -61 score 0.177
+game  95 A=white 1/2-1/2 threefold_repetition   plies= 89 | A: +1 =32 -61 score 0.181
+game  93 A=white 1/2-1/2 threefold_repetition   plies=249 | A: +1 =33 -61 score 0.184
+game  96 A=black 1-0     checkmate              plies=125 | A: +1 =33 -62 score 0.182
+game  97 A=white 0-1     checkmate              plies=118 | A: +1 =33 -63 score 0.180
+game  98 A=black 1-0     checkmate              plies=149 | A: +1 =33 -64 score 0.179
+game  99 A=white 0-1     checkmate              plies=162 | A: +1 =33 -65 score 0.177
+game 100 A=black 1-0     checkmate              plies=159 | A: +1 =33 -66 score 0.175
+{
+ "games": 100,
+ "wins": 1,
+ "draws": 33,
+ "losses": 66,
+ "score": 0.175,
+ "elo": -269.3663599454523,
+ "elo_lo": -336.0692254747087,
+ "elo_hi": -216.09104248689616,
+ "preliminary": true,
+ "pairs": 50,
+ "elo_lo_pairs": -345.58121411232514,
+ "elo_hi_pairs": -210.2273003654994,
+ "distinct_games": 100,
+ "a": "build/t_final",
+ "b": "sf:elo=3190",
+ "limits": {
+  "nodes": 0,
+  "nodes2": 0,
+  "movetime": 0,
+  "movetime2": 0,
+  "tc": "60+0.6"
+ },
+ "a_avg_depth": 13.221883106973905,
+ "a_avg_nodes": 522699.658934839,
+ "a_avg_time": 1.281866335712388,
+ "b_avg_depth": 31.92832141226602,
+ "b_avg_nodes": 813232.6166489118,
+ "b_avg_time": 1.4453168182390463,
+ "a_total_nodes": 3425250865,
+ "b_total_nodes": 5343751524,
+ "wall_seconds": 4524.570846557617,
+ "terminations": {
+  "checkmate": 67,
+  "threefold_repetition": 30,
+  "fifty_moves": 2,
+  "insufficient_material": 1
+ }
+}

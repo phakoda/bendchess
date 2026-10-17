@@ -9,5 +9,4 @@ results/*.log
 results/matches_suite64/
 results/ab/*.json
 results/costmodel_raw.json
-results/sf3190.txt
 results/sf_odds10.txt
