@@ -102,8 +102,11 @@ def pc64(+lo: U32, +hi: U32) -> U32:
 # pieces on the enemy king zone; wn/bn: number of such attackers; wb/bb:
 # bishop counts.
 
+# wq/bq: queen present; wal/wah, bal/bah: squares attacked by the knights,
+# bishops, rooks and queens of each side (lo / hi halves)
 type Ev is Data:
-  Ev{mg: U32, eg: U32, wu: U32, wn: U32, bu: U32, bn: U32, wb: U32, bb: U32}
+  Ev{mg: U32, eg: U32, wu: U32, wn: U32, bu: U32, bn: U32, wb: U32, bb: U32, wq: U32, bq: U32,
+     wal: U32, wah: U32, bal: U32, bah: U32}
 
 def wmg(+ws: U32, +i: U32) -> U32:
   +k = U32.and(ws, 255)
@@ -116,9 +119,9 @@ def weg(+ws: U32, +i: U32) -> U32:
 # cnt occurrences of feature i for colour c
 def ev.add(ev: Ev, +ws: U32, +i: U32, +cnt: U32, +c: U32) -> Ev:
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb}:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
       Ev{U32.add(mg, B.neg_if(U32.mul(cnt, wmg(ws, i)), c)), U32.add(eg, B.neg_if(U32.mul(cnt, weg(ws, i)), c)),
-        wu, wn, bu, bn, wb, bb}
+        wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}
 
 # white-minus-black occurrences of feature i
 def ev.add2(ev: Ev, +ws: U32, +i: U32, +wc: U32, +bc: U32) -> Ev:
@@ -127,18 +130,18 @@ def ev.add2(ev: Ev, +ws: U32, +i: U32, +wc: U32, +bc: U32) -> Ev:
 # a colour-c piece puts `units` attack units on the enemy king zone
 def ev.att(+ev: Ev, +c: U32, +units: U32) -> Ev:
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb}:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
       +w = U32.is_zero(c)
       +hit = C.b2u(U32.is_gt(units, 0))
       Ev{mg, eg, C.sel(w, U32.add(wu, units), wu), C.sel(w, U32.add(wn, hit), wn),
-        C.sel(w, bu, U32.add(bu, units)), C.sel(w, bn, U32.add(bn, hit)), wb, bb}
+        C.sel(w, bu, U32.add(bu, units)), C.sel(w, bn, U32.add(bn, hit)), wb, bb, wq, bq, wal, wah, bal, bah}
 
 # a colour-c bishop
 def ev.bis(ev: Ev, +c: U32) -> Ev:
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb}:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
       +w = C.b2u(U32.is_zero(c))
-      Ev{mg, eg, wu, wn, bu, bn, U32.add(wb, w), U32.add(bb, U32.sub(1, w))}
+      Ev{mg, eg, wu, wn, bu, bn, U32.add(wb, w), U32.add(bb, U32.sub(1, w)), wq, bq, wal, wah, bal, bah}
 
 # Pawn terms
 # ----------
@@ -177,6 +180,56 @@ def shield.b(+k: U32, +rhi: U32) -> U32:
     U32.shln(a, U32.to_nat(U32.and(U32.shln(U32.sub(r, 6), 3n), 31))))
   U32.and(B.popcnt(U32.and(rhi, z)), C.bmask(U32.is_ge(r, 6)))
 
+# a colour-c attack term that adds king-attack units without counting an
+# attacking piece
+def ev.units(+ev: Ev, +c: U32, +units: U32) -> Ev:
+  match ev:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
+      +w = U32.is_zero(c)
+      Ev{mg, eg, C.sel(w, U32.add(wu, units), wu), wn, C.sel(w, bu, U32.add(bu, units)), bn, wb, bb, wq, bq,
+        wal, wah, bal, bah}
+
+# Rank masks: the 8-bit set of ranks a..b, spread to the lo / hi halves
+def rows8(+a: U32, +b: U32) -> U32:
+  +top = U32.sub(U32.shln(1, U32.to_nat(U32.add(U32.min(b, 7), 1))), 1)
+  +bot = U32.sub(U32.shln(1, U32.to_nat(U32.min(a, 8))), 1)
+  C.sel(U32.is_gt(a, b), 0, U32.and(top, U32.not(bot)))
+
+def bytes4(+x: U32) -> U32:
+  U32.or(U32.or(U32.mul(U32.and(x, 1), 255), U32.mul(U32.and(U32.shrn(x, 1n), 1), 65280)),
+    U32.or(U32.mul(U32.and(U32.shrn(x, 2n), 1), 16711680), U32.mul(U32.and(U32.shrn(x, 3n), 1), 4278190080)))
+
+# King shelter (features 18 and 20)
+# 18: files at the king (file +-1) without an own pawn - "open toward the
+#     king" (counted for the defender; a penalty)
+# 20: enemy pawns on those files within three ranks in front of the king
+#     (pawn storm; counted for the attacker)
+# both also add king-attack units for the attacker (2 each)
+def storm.w(+k: U32, +blo: U32, +bhi: U32) -> U32:
+  +r = C.sq.rank(k)
+  +fm = fmask(adj3(C.sq.file(k)))
+  +rm = rows8(U32.add(r, 1), U32.add(r, 3))
+  pc64(U32.and(U32.and(blo, fm), bytes4(rm)), U32.and(U32.and(bhi, fm), bytes4(U32.shrn(rm, 4n))))
+
+def storm.b(+k: U32, +wlo: U32, +whi: U32) -> U32:
+  +r = C.sq.rank(k)
+  +fm = fmask(adj3(C.sq.file(k)))
+  +rm = C.sel(U32.is_zero(r), 0, rows8(C.sel(U32.is_ge(r, 3), U32.sub(r, 3), 0), U32.sub(r, 1)))
+  pc64(U32.and(U32.and(wlo, fm), bytes4(rm)), U32.and(U32.and(whi, fm), bytes4(U32.shrn(rm, 4n))))
+
+def open.at(+k: U32, +fown: U32) -> U32:
+  B.popcnt(U32.and(adj3(C.sq.file(k)), U32.not(fown)))
+
+def king.shelter(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U32) -> Ev:
+  +wk = B.P.wk(p)
+  +bk = B.P.bk(p)
+  +ow = open.at(wk, files(wlo, whi))
+  +ob = open.at(bk, files(blo, bhi))
+  +sw = storm.b(bk, wlo, whi)
+  +sb = storm.w(wk, blo, bhi)
+  e1 = ev.add2(ev.add2(ev, ws, 18, ow, ob), ws, 20, sw, sb)
+  ev.units(ev.units(e1, 0, U32.mul(U32.add(ob, sw), 2)), 1, U32.mul(U32.add(ow, sb), 2))
+
 # nw: squares north of white pawns, sb: squares south of black pawns
 def pawns.c(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U32, nw: BB, sb: BB) -> Ev:
   match nw sb:
@@ -193,8 +246,9 @@ def pawns.c(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: 
       e5 = pawn.passed(e4, ws, pwl, pwh, pbl, pbh, 5)
       e6 = ev.add2(e5, ws, 6, iso(wlo, whi), iso(blo, bhi))
       e7 = ev.add2(e6, ws, 7, dbl(wlo, whi), dbl(blo, bhi))
-      ev.add2(e7, ws, 17, shield.w(B.P.wk(p), U32.and(wlo, U32.not(nlo))),
+      e8 = ev.add2(e7, ws, 17, shield.w(B.P.wk(p), U32.and(wlo, U32.not(nlo))),
         shield.b(B.P.bk(p), U32.and(bhi, U32.not(shi))))
+      king.shelter(e8, ws, p, wlo, whi, blo, bhi)
 
 def pawns(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U32) -> Ev:
   pawns.c(ev, ws, p, wlo, whi, blo, bhi, nfill(wlo, whi), sfill(blo, bhi))
@@ -202,11 +256,6 @@ def pawns(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U3
 # 256 when square t touches the king square ek, else 0
 def zone256(+t: U32, +ek: U32) -> U32:
   C.sel(U32.is_ne(U32.and(B.dinfo(t, ek), 32), 0), 256, 0)
-
-def mob.walk.c?(+t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32, ok: Bool,
-                r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +v) = r
-  mob.walk.d(m, t, d, len, c, ek, acc, v, ok, U32.is_zero(v))
 
 def mob.walk?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32) ->
   Array<U32> & U32:
@@ -226,14 +275,10 @@ def mob.walk.d?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +
     case True{} False{}:
       (m, U32.add(acc, U32.add(zone256(t, ek), C.b2u(U32.is_ne(C.pc.color(v), c)))))
 
-def mob.dirs.go?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32,
-                 go: Bool) -> Array<U32> & U32:
-  match go:
-    case False{}:
-      (m, acc)
-    case True{}:
-      +d = B.dir(U32.to_nat(di))
-      mob.dirs.k(sq, c, ek, di, de, len, mob.walk(m, U32.add(sq, d), d, len, c, ek, acc))
+def mob.walk.c?(+t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32, ok: Bool,
+                r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +v) = r
+  mob.walk.d(m, t, d, len, c, ek, acc, v, ok, U32.is_zero(v))
 
 def mob.dirs?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32) ->
   Array<U32> & U32:
@@ -243,6 +288,15 @@ def mob.dirs.k?(+sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, r: A
   Array<U32> & U32:
   (m, +acc) = r
   mob.dirs(m, sq, c, ek, U32.add(di, 1), de, len, acc)
+
+def mob.dirs.go?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32,
+                 go: Bool) -> Array<U32> & U32:
+  match go:
+    case False{}:
+      (m, acc)
+    case True{}:
+      +d = B.dir(U32.to_nat(di))
+      mob.dirs.k(sq, c, ek, di, de, len, mob.walk(m, U32.add(sq, d), d, len, c, ek, acc))
 
 # rook on an open / semi-open file and on the 7th rank; fl holds the white
 # pawn files (low byte) and the black pawn files (next byte)
@@ -352,17 +406,58 @@ def slider.mob(+sq: U32, +c: U32, +ek: U32, +o: B.Occ, +base: U32, two: Bool) ->
     case False{}:
       att.mob.bb(ray4(C.sq.to64(sq), base, B.occ.all.lo(o), B.occ.all.hi(o)), c, ek, o)
 
+# a colour-c queen
+def ev.queen(ev: Ev, +c: U32) -> Ev:
+  match ev:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
+      +w = C.b2u(U32.is_zero(c))
+      Ev{mg, eg, wu, wn, bu, bn, wb, bb, U32.or(wq, w), U32.or(bq, U32.sub(1, w)), wal, wah, bal, bah}
+
+# squares attacked by a colour-c piece
+def ev.attk(+ev: Ev, +c: U32, +a: BB) -> Ev:
+  match ev a:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah} BB{al, ah}:
+      +w = U32.is_zero(c)
+      Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, C.sel(w, U32.or(wal, al), wal), C.sel(w, U32.or(wah, ah), wah),
+        C.sel(w, bal, U32.or(bal, al)), C.sel(w, bah, U32.or(bah, ah))}
+
+# a rook or queen of colour c on a file next to the enemy king (file +-1)
+# that holds no enemy pawn (feature 19; 3 king-attack units)
+def heavy.ev(ev: Ev, +ws: U32, +sq: U32, +c: U32, +fl: U32, +ek: U32) -> Ev:
+  +f = C.sq.file(sq)
+  +their = U32.and(U32.shrn(C.sel(U32.is_zero(c), U32.shrn(fl, 8n), fl), U32.to_nat(f)), 1)
+  +near = U32.is_ne(U32.and(adj3(C.sq.file(ek)), U32.shln(1, U32.to_nat(f))), 0)
+  +hit = C.b2u(near && U32.is_zero(their))
+  ev.units(ev.add(ev, ws, 19, hit, c), c, U32.mul(hit, 3))
+
+def knight.bb(+sq: U32) -> BB:
+  +i = U32.to_nat(C.sq.to64(sq))
+  BB{T.natt_lo(i), T.natt_hi(i)}
+
+def slider.bb(+sq: U32, +o: B.Occ, +base: U32, two: Bool) -> BB:
+  match two:
+    case True{}:
+      +s = C.sq.to64(sq)
+      bb.or(ray4(s, 0, B.occ.all.lo(o), B.occ.all.hi(o)), ray4(s, 4, B.occ.all.lo(o), B.occ.all.hi(o)))
+    case False{}:
+      ray4(C.sq.to64(sq), base, B.occ.all.lo(o), B.occ.all.hi(o))
+
 def pb.type.full?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, +o: B.Occ, t: Nat) ->
   Array<U32> & Ev:
   match t:
     case 2n:
-      mob.fin(ev, ws, c, 2, (m, knight.mob(sq, c, ek, o)))
+      +a = knight.bb(sq)
+      mob.fin(ev.attk(ev, c, a), ws, c, 2, (m, att.mob.bb(a, c, ek, o)))
     case 3n:
-      mob.fin(ev.bis(ev, c), ws, c, 3, (m, slider.mob(sq, c, ek, o, 4, False{})))
+      +a = slider.bb(sq, o, 4, False{})
+      mob.fin(ev.attk(ev.bis(ev, c), c, a), ws, c, 3, (m, att.mob.bb(a, c, ek, o)))
     case 4n:
-      mob.fin(rook.ev(ev, ws, sq, c, fl), ws, c, 4, (m, slider.mob(sq, c, ek, o, 0, False{})))
+      +a = slider.bb(sq, o, 0, False{})
+      mob.fin(ev.attk(heavy.ev(rook.ev(ev, ws, sq, c, fl), ws, sq, c, fl, ek), c, a), ws, c, 4,
+        (m, att.mob.bb(a, c, ek, o)))
     case 5n:
-      mob.fin(ev, ws, c, 5, (m, slider.mob(sq, c, ek, o, 0, True{})))
+      +a = slider.bb(sq, o, 0, True{})
+      mob.fin(ev.attk(heavy.ev(ev.queen(ev, c), ws, sq, c, fl, ek), c, a), ws, c, 5, (m, att.mob.bb(a, c, ek, o)))
     case _:
       (m, ev)
 
@@ -377,18 +472,6 @@ def pb.type.l?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl
 def pb.type?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: U32, +o: B.Occ, t: Nat) ->
   Array<U32> & Ev:
   pb.type.l(m, sq, c, ek, ev, ws, fl, o, t, light(ws))
-
-def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ,
-           nzlo: Bool, nzhi: Bool) -> Array<U32> & Ev:
-  match nzlo nzhi:
-    case True{} _:
-      +sq = C.sq.from64(B.ctz(lo))
-      pb.k(U32.and(lo, U32.sub(lo, 1)), hi, sq, ev, ws, fl, wk, bk, o, m[sq])
-    case False{} True{}:
-      +sq = C.sq.from64(U32.add(B.ctz(hi), 32))
-      pb.k(lo, U32.and(hi, U32.sub(hi, 1)), sq, ev, ws, fl, wk, bk, o, m[sq])
-    case False{} False{}:
-      (m, ev)
 
 def pb?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ) ->
   Array<U32> & Ev:
@@ -406,6 +489,18 @@ def pb.k?(+lo: U32, +hi: U32, +sq: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +b
   pb.n(lo, hi, ws, fl, wk, bk, o, pb.type(m, sq, c, C.sel(U32.is_zero(c), bk, wk), ev, ws, fl, o,
     U32.to_nat(C.pc.type(v))))
 
+def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ,
+           nzlo: Bool, nzhi: Bool) -> Array<U32> & Ev:
+  match nzlo nzhi:
+    case True{} _:
+      +sq = C.sq.from64(B.ctz(lo))
+      pb.k(U32.and(lo, U32.sub(lo, 1)), hi, sq, ev, ws, fl, wk, bk, o, m[sq])
+    case False{} True{}:
+      +sq = C.sq.from64(U32.add(B.ctz(hi), 32))
+      pb.k(lo, U32.and(hi, U32.sub(hi, 1)), sq, ev, ws, fl, wk, bk, o, m[sq])
+    case False{} False{}:
+      (m, ev)
+
 # Final assembly
 # --------------
 
@@ -415,16 +510,71 @@ def katt(+u: U32, +n: U32) -> U32:
 
 def eval.fin.c(+p: B.Pos, +ws: U32, m: Array<U32>, ev: Ev) -> Array<U32> & U32:
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb}:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
       +base = U32.is_zero(U32.and(ws, 255))
       (m, taper(U32.add(mg, C.sel(base, B.P.mg(p), 0)), U32.add(eg, C.sel(base, B.P.eg(p), 0)), B.P.ph(p)))
 
+# Threats (features 22, 23)
+# squares attacked by white / black pawns
+def patt.w(+lo: U32, +hi: U32) -> BB:
+  +h7 = U32.or(U32.shln(hi, 7n), U32.shrn(lo, 25n))
+  +h9 = U32.or(U32.shln(hi, 9n), U32.shrn(lo, 23n))
+  BB{U32.or(U32.and(U32.shln(lo, 7n), NOT_H()), U32.and(U32.shln(lo, 9n), NOT_A())),
+     U32.or(U32.and(h7, NOT_H()), U32.and(h9, NOT_A()))}
+
+def patt.b(+lo: U32, +hi: U32) -> BB:
+  +l9 = U32.or(U32.shrn(lo, 9n), U32.shln(hi, 23n))
+  +l7 = U32.or(U32.shrn(lo, 7n), U32.shln(hi, 25n))
+  BB{U32.or(U32.and(l9, NOT_H()), U32.and(l7, NOT_A())),
+     U32.or(U32.and(U32.shrn(hi, 9n), NOT_H()), U32.and(U32.shrn(hi, 7n), NOT_A()))}
+
+def kbit.lo(+k: U32) -> U32:
+  +i = C.sq.to64(k)
+  C.sel(U32.is_lt(i, 32), U32.shln(1, U32.to_nat(U32.and(i, 31))), 0)
+
+def kbit.hi(+k: U32) -> U32:
+  +i = C.sq.to64(k)
+  C.sel(U32.is_ge(i, 32), U32.shln(1, U32.to_nat(U32.and(i, 31))), 0)
+
+# 22: enemy pieces (not pawns, not the king) attacked by our pawns
+# 23: enemy pieces (not pawns, not the king) we attack and they do not
+#     defend (attacks of pieces, pawns and king)
+def threats.c(ev: Ev, +ws: U32, +wk: U32, +bk: U32, +wl: U32, +wh: U32, +bl: U32, +bh: U32, pw: BB, pb: BB,
+              +wal: U32, +wah: U32, +bal: U32, +bah: U32) -> Ev:
+  match pw pb:
+    case BB{+pwl, +pwh} BB{+pbl, +pbh}:
+      +wki = U32.to_nat(C.sq.to64(wk))
+      +bki = U32.to_nat(C.sq.to64(bk))
+      +wAl = U32.or(U32.or(wal, pwl), T.katt_lo(wki))
+      +wAh = U32.or(U32.or(wah, pwh), T.katt_hi(wki))
+      +bAl = U32.or(U32.or(bal, pbl), T.katt_lo(bki))
+      +bAh = U32.or(U32.or(bah, pbh), T.katt_hi(bki))
+      +pt_w = pc64(U32.and(pwl, bl), U32.and(pwh, bh))
+      +pt_b = pc64(U32.and(pbl, wl), U32.and(pbh, wh))
+      +hg_w = pc64(U32.and(U32.and(bl, wAl), U32.not(bAl)), U32.and(U32.and(bh, wAh), U32.not(bAh)))
+      +hg_b = pc64(U32.and(U32.and(wl, bAl), U32.not(wAl)), U32.and(U32.and(wh, bAh), U32.not(wAh)))
+      ev.add2(ev.add2(ev, ws, 22, pt_w, pt_b), ws, 23, hg_w, hg_b)
+
+def threats.o(ev: Ev, +ws: U32, +wk: U32, +bk: U32, +wal: U32, +wah: U32, +bal: U32, +bah: U32, o: B.Occ) -> Ev:
+  match o:
+    case B.Occ{+w0, +w1, +b0, +b1, +wp0, +wp1, +bp0, +bp1, _}:
+      threats.c(ev, ws, wk, bk,
+        U32.and(U32.and(w0, U32.not(wp0)), U32.not(kbit.lo(wk))), U32.and(U32.and(w1, U32.not(wp1)), U32.not(kbit.hi(wk))),
+        U32.and(U32.and(b0, U32.not(bp0)), U32.not(kbit.lo(bk))), U32.and(U32.and(b1, U32.not(bp1)), U32.not(kbit.hi(bk))),
+        patt.w(wp0, wp1), patt.b(bp0, bp1), wal, wah, bal, bah)
+
+# king-attack features: 16 (units^2 / 8, capped, with 2+ attackers) and
+# 21 (the same, only when the attacker still has a queen)
 def eval.fin(+p: B.Pos, +ws: U32, r: Array<U32> & Ev) -> Array<U32> & U32:
   (m, ev) = r
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb}:
-      e1 = ev.add2(Ev{mg, eg, 0, 0, 0, 0, 0, 0}, ws, 16, katt(wu, wn), katt(bu, bn))
-      eval.fin.c(p, ws, m, ev.add2(e1, ws, 8, C.b2u(U32.is_ge(wb, 2)), C.b2u(U32.is_ge(bb, 2))))
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
+      +kw = katt(wu, wn)
+      +kb = katt(bu, bn)
+      e0 = {Ev{mg, eg, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} : Ev}
+      e1 = ev.add2(ev.add2(e0, ws, 16, kw, kb), ws, 21, U32.mul(kw, wq), U32.mul(kb, bq))
+      e2 = threats.o(e1, ws, B.P.wk(p), B.P.bk(p), wal, wah, bal, bah, B.P.occ(p))
+      eval.fin.c(p, ws, m, ev.add2(e2, ws, 8, C.b2u(U32.is_ge(wb, 2)), C.b2u(U32.is_ge(bb, 2))))
 
 def eval.occ(m: Array<U32>, +p: B.Pos, +ws: U32, o: B.Occ) -> Array<U32> & U32:
   match o:
@@ -432,7 +582,7 @@ def eval.occ(m: Array<U32>, +p: B.Pos, +ws: U32, o: B.Occ) -> Array<U32> & U32:
       +lo = U32.and(U32.or(w0, b0), U32.not(U32.or(wp0, bp0)))
       +hi = U32.and(U32.or(w1, b1), U32.not(U32.or(wp1, bp1)))
       +fl = U32.or(files(wp0, wp1), U32.shln(files(bp0, bp1), 8n))
-      ev = pawns(Ev{0, 0, 0, 0, 0, 0, 0, 0}, ws, p, wp0, wp1, bp0, bp1)
+      ev = pawns(Ev{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, ws, p, wp0, wp1, bp0, bp1)
       eval.fin(p, ws, pb(m, lo, hi, ev, ws, fl, B.P.wk(p), B.P.bk(p), B.P.occ(p)))
 
 # white-relative evaluation with weight set ws (0 = the engine's weights)

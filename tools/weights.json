@@ -90,6 +90,36 @@
    "pawn_shield",
    13,
    -5
+  ],
+  [
+   "king_open_files",
+   -20,
+   -5
+  ],
+  [
+   "heavy_on_king_file",
+   25,
+   5
+  ],
+  [
+   "pawn_storm",
+   12,
+   0
+  ],
+  [
+   "king_danger_queen",
+   1,
+   0
+  ],
+  [
+   "pawn_threat",
+   40,
+   30
+  ],
+  [
+   "hanging_piece",
+   30,
+   20
   ]
  ]
 }

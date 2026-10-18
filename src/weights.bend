@@ -41,6 +41,18 @@ def w_mg(i: Nat) -> U32:
       5
     case 17n:
       13
+    case 18n:
+      4294967276
+    case 19n:
+      25
+    case 20n:
+      12
+    case 21n:
+      1
+    case 22n:
+      40
+    case 23n:
+      30
     case _:
       0
 
@@ -82,8 +94,20 @@ def w_eg(i: Nat) -> U32:
       4294967294
     case 17n:
       4294967291
+    case 18n:
+      4294967291
+    case 19n:
+      5
+    case 20n:
+      0
+    case 21n:
+      0
+    case 22n:
+      30
+    case 23n:
+      20
     case _:
       0
 
 def NFEAT() -> U32:
-  18
+  24
