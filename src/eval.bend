@@ -257,10 +257,6 @@ def pawns(ev: Ev, +ws: U32, +p: B.Pos, +wlo: U32, +whi: U32, +blo: U32, +bhi: U3
 def zone256(+t: U32, +ek: U32) -> U32:
   C.sel(U32.is_ne(U32.and(B.dinfo(t, ek), 32), 0), 256, 0)
 
-def mob.walk?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32) ->
-  Array<U32> & U32:
-  mob.walk.c(t, d, len, c, ek, acc, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
-
 # Mobility walks
 # --------------
 # acc packs reachable squares (low byte) and king-zone hits (<< 8).
@@ -280,9 +276,9 @@ def mob.walk.c?(+t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32, ok: B
   (m, +v) = r
   mob.walk.d(m, t, d, len, c, ek, acc, v, ok, U32.is_zero(v))
 
-def mob.dirs?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32) ->
+def mob.walk?(m: Array<U32>, +t: U32, +d: U32, +len: U32, +c: U32, +ek: U32, +acc: U32) ->
   Array<U32> & U32:
-  mob.dirs.go(m, sq, c, ek, di, de, len, acc, U32.is_lt(di, de))
+  mob.walk.c(t, d, len, c, ek, acc, C.sq.ok(t) && U32.is_gt(len, 0), m[C.sq.safe(t)])
 
 def mob.dirs.k?(+sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, r: Array<U32> & U32) ->
   Array<U32> & U32:
@@ -297,6 +293,10 @@ def mob.dirs.go?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32,
     case True{}:
       +d = B.dir(U32.to_nat(di))
       mob.dirs.k(sq, c, ek, di, de, len, mob.walk(m, U32.add(sq, d), d, len, c, ek, acc))
+
+def mob.dirs?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, +di: U32, +de: U32, +len: U32, +acc: U32) ->
+  Array<U32> & U32:
+  mob.dirs.go(m, sq, c, ek, di, de, len, acc, U32.is_lt(di, de))
 
 # rook on an open / semi-open file and on the 7th rank; fl holds the white
 # pawn files (low byte) and the black pawn files (next byte)
@@ -473,10 +473,6 @@ def pb.type?(m: Array<U32>, +sq: U32, +c: U32, +ek: U32, ev: Ev, +ws: U32, +fl: 
   Array<U32> & Ev:
   pb.type.l(m, sq, c, ek, ev, ws, fl, o, t, light(ws))
 
-def pb?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ) ->
-  Array<U32> & Ev:
-  pb.go(m, lo, hi, ev, ws, fl, wk, bk, o, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
-
 def pb.n?(+lo: U32, +hi: U32, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ, r: Array<U32> & Ev) ->
   Array<U32> & Ev:
   (m, ev) = r
@@ -501,6 +497,10 @@ def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U
     case False{} False{}:
       (m, ev)
 
+def pb?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U32, +bk: U32, +o: B.Occ) ->
+  Array<U32> & Ev:
+  pb.go(m, lo, hi, ev, ws, fl, wk, bk, o, U32.is_ne(lo, 0), U32.is_ne(hi, 0))
+
 # Final assembly
 # --------------
 
@@ -508,10 +508,24 @@ def pb.go?(m: Array<U32>, +lo: U32, +hi: U32, ev: Ev, +ws: U32, +fl: U32, +wk: U
 def katt(+u: U32, +n: U32) -> U32:
   C.sel(U32.is_ge(n, 2), U32.div(U32.min(U32.mul(u, u), 2400), 8), 0)
 
+# Danger signal for the search (see S.Nd.dng): per side, the queen-gated
+# king attack it faces (8 bits) and the threats against its pieces (4 bits
+# from bit 8); white's in the low half of DPAIR, black's in the high half.
+# The side-to-move half goes to DSTM on every full or hashed evaluation.
+def DPAIR() -> U32:
+  U32.add(B.SC(), 20)
+
+def DSTM() -> U32:
+  U32.add(B.SC(), 21)
+
+def danger(+k: U32, +t: U32) -> U32:
+  U32.or(U32.min(k, 255), U32.shln(U32.min(t, 15), 8n))
+
 def eval.fin.c(+p: B.Pos, +ws: U32, m: Array<U32>, ev: Ev) -> Array<U32> & U32:
   match ev:
     case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
       +base = U32.is_zero(U32.and(ws, 255))
+      m[DPAIR()] <- U32.or(danger(bn, wu), U32.shln(danger(wn, bu), 16n))
       (m, taper(U32.add(mg, C.sel(base, B.P.mg(p), 0)), U32.add(eg, C.sel(base, B.P.eg(p), 0)), B.P.ph(p)))
 
 # Threats (features 22, 23)
@@ -536,6 +550,13 @@ def kbit.hi(+k: U32) -> U32:
   +i = C.sq.to64(k)
   C.sel(U32.is_ge(i, 32), U32.shln(1, U32.to_nat(U32.and(i, 31))), 0)
 
+# after the king-attack terms the wu/bu fields hold the threats against
+# white / black (pawn threats + hanging pieces), for the danger signal
+def ev.thr(ev: Ev, +tw: U32, +tb: U32) -> Ev:
+  match ev:
+    case Ev{mg, eg, _, wn, _, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
+      Ev{mg, eg, tw, wn, tb, bn, wb, bb, wq, bq, wal, wah, bal, bah}
+
 # 22: enemy pieces (not pawns, not the king) attacked by our pawns
 # 23: enemy pieces (not pawns, not the king) we attack and they do not
 #     defend (attacks of pieces, pawns and king)
@@ -553,7 +574,7 @@ def threats.c(ev: Ev, +ws: U32, +wk: U32, +bk: U32, +wl: U32, +wh: U32, +bl: U32
       +pt_b = pc64(U32.and(pbl, wl), U32.and(pbh, wh))
       +hg_w = pc64(U32.and(U32.and(bl, wAl), U32.not(bAl)), U32.and(U32.and(bh, wAh), U32.not(bAh)))
       +hg_b = pc64(U32.and(U32.and(wl, bAl), U32.not(wAl)), U32.and(U32.and(wh, bAh), U32.not(wAh)))
-      ev.add2(ev.add2(ev, ws, 22, pt_w, pt_b), ws, 23, hg_w, hg_b)
+      ev.thr(ev.add2(ev.add2(ev, ws, 22, pt_w, pt_b), ws, 23, hg_w, hg_b), U32.add(pt_b, hg_b), U32.add(pt_w, hg_w))
 
 def threats.o(ev: Ev, +ws: U32, +wk: U32, +bk: U32, +wal: U32, +wah: U32, +bal: U32, +bah: U32, o: B.Occ) -> Ev:
   match o:
@@ -568,10 +589,11 @@ def threats.o(ev: Ev, +ws: U32, +wk: U32, +bk: U32, +wal: U32, +wah: U32, +bal: 
 def eval.fin(+p: B.Pos, +ws: U32, r: Array<U32> & Ev) -> Array<U32> & U32:
   (m, ev) = r
   match ev:
-    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, wq, bq, wal, wah, bal, bah}:
+    case Ev{mg, eg, wu, wn, bu, bn, wb, bb, +wq, +bq, wal, wah, bal, bah}:
       +kw = katt(wu, wn)
       +kb = katt(bu, bn)
-      e0 = {Ev{mg, eg, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} : Ev}
+      # wn/bn now carry the queen-gated king attack of white / black
+      e0 = {Ev{mg, eg, 0, U32.mul(kw, wq), 0, U32.mul(kb, bq), 0, 0, 0, 0, 0, 0, 0, 0} : Ev}
       e1 = ev.add2(ev.add2(e0, ws, 16, kw, kb), ws, 21, U32.mul(kw, wq), U32.mul(kb, bq))
       e2 = threats.o(e1, ws, B.P.wk(p), B.P.bk(p), wal, wah, bal, bah, B.P.occ(p))
       eval.fin.c(p, ws, m, ev.add2(e2, ws, 8, C.b2u(U32.is_ge(wb, 2)), C.b2u(U32.is_ge(bb, 2))))
@@ -604,17 +626,31 @@ def eh.idx(+p: B.Pos) -> U32:
 def eh.lock(+p: B.Pos, +ws: U32) -> U32:
   U32.xor(B.P.hhi(p), U32.mul(ws, 2654435761))
 
-def eh.store(+p: B.Pos, +ws: U32, r: Array<U32> & U32) -> Array<U32> & U32:
-  (m, +s) = r
+# the score word holds the score (low 16 bits, signed) and the side-to-move
+# danger signal (high 16 bits)
+def eh.store.d(+p: B.Pos, +ws: U32, +s: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +dp) = r
+  +d = C.sel(U32.is_zero(B.P.side(p)), U32.and(dp, 65535), U32.shrn(dp, 16n))
   +i = eh.idx(p)
   m[i] <- eh.lock(p, ws)
-  m[U32.add(i, 1)] <- s
+  m[U32.add(i, 1)] <- U32.or(U32.and(s, 65535), U32.shln(d, 16n))
+  m[DSTM()] <- d
   (m, s)
+
+def eh.store(+p: B.Pos, +ws: U32, r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +s) = r
+  eh.store.d(p, ws, s, m[DPAIR()])
+
+def eh.unpack(r: Array<U32> & U32) -> Array<U32> & U32:
+  (m, +w) = r
+  +s = U32.and(w, 65535)
+  m[DSTM()] <- U32.shrn(w, 16n)
+  (m, C.sel(U32.is_ge(s, 32768), U32.or(s, 4294901760), s))
 
 def eh.hit(m: Array<U32>, +p: B.Pos, +ws: U32, hit: Bool) -> Array<U32> & U32:
   match hit:
     case True{}:
-      m[U32.add(eh.idx(p), 1)]
+      eh.unpack(m[U32.add(eh.idx(p), 1)])
     case False{}:
       eh.store(p, ws, eval.rel(p, eval.white(m, p, ws)))
 
@@ -627,6 +663,7 @@ def eval.mode(m: Array<U32>, +p: B.Pos, +mode: U32, pesto_only: Bool) -> Array<U
     case False{}:
       eh.probe(p, C.sel(U32.is_eq(mode, 2), 256, 0), m[eh.idx(p)])
     case True{}:
+      m[DSTM()] <- 0
       (m, pesto(p))
 
 # side-to-move evaluation. mode 0: full; 1: PeSTO only; 2: light (no
