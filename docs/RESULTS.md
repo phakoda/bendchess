@@ -313,11 +313,27 @@ book openings with both colours, all games distinct:
 | danger pruning (king attack or threats) vs king safety | 529 | 174 / 181 / 174 | 0 | stopped (restart), LLR -0.33 |
 | danger pruning (king attack) vs king safety | 1000 | 318 / 364 / 318 | 0 [-17, +17] | inconclusive, LLR -0.65 |
 
-MAGNUS_V3 (Magnus-proxy re-run with this build: in progress)
+Magnus-proxy re-run with the king-safety build (same 100 openings x
+colours, 60 s + 0.6 s, as in section 8.1):
+
+| build vs SF16 UCI_Elo 2850 | W / D / L | Score | Elo diff (95%) | avg depth / nodes per move |
+|---|---|---|---|---|
+| phase-2 final (8.1) | 17 / 52 / 31 | 43.0% | -49 [-97, -2] | 13.9 / 489 k |
+| phase 3: king safety + threats | 17 / 45 / 38 | 39.5% | -74 [-127, -25] | 13.5 / 448 k |
+
+The proxy result did not improve: -25 Elo, well inside the noise of two
+100-game matches (the standard error of the difference is about 35 Elo),
+so it neither confirms nor refutes the +33 from self-play. Two effects
+point the same way: self-play gains against the engine's own previous
+version usually overstate gains against other engines, and the new terms
+cost about 8% of the node rate (0.4 ply less depth per move at this time
+control). The SPRT is the reliable measurement; the proxy match only
+says the change is not a large gain against Stockfish-like play.
 
 ## 11. Known limitations
 
-* Strength: about 2800-2900 on Stockfish's UCI_Elo scale (section 8.1);
+* Strength: about 2800-2900 on Stockfish's UCI_Elo scale (section 8.1;
+  the phase-3 re-run, section 10.4, is within the same range);
   full-strength Stockfish 16 scores 35.5/40 at equal time and 38.5/40
   while using 10x less time.
 * Node rate: the phase-2 search is +114 Elo better at equal nodes but
