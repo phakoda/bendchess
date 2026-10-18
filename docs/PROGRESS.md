@@ -30,6 +30,11 @@
       5x training data, refit weights, learned iteration-cost model;
       TimePolicy 2/3; practical mode (Module 8); speed work; proofs
       re-checked; 30/30 engine tests.
+- [x] Phase 3 (RESULTS.md section 10): loss analysis of 169 lost games
+      (Stockfish as referee only); king-safety and threat terms (6 new
+      features, all 24 weights refit with match positions): SPRT +33 Elo;
+      danger-aware pruning tried twice, level, reverted; SPRT support in
+      the match runner; Magnus-proxy re-run.
 
 ## Commands
 

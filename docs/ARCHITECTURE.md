@@ -108,14 +108,20 @@ board; superset masks skip the scan when no attacker can exist.
 
 ## Evaluation
 
-`EvalMode=1` (default): PeSTO tapered tables (incremental) + tempo,
-corrected by the correction history. `EvalMode=0`: plus 18 linear
-features (passed pawns by rank, isolated, doubled, bishop pair, rook on
-open / semi-open file and 7th rank, mobility per piece type, king attack
-units, pawn shield). Pawn terms are pure bit arithmetic on the pawn
-bitboards (fills, spans, file masks); knights use attack tables +
-popcount; bishops / rooks / queens walk rays. The feature vector is
-dumped by the `features` command for the learning pipeline.
+`EvalMode=0` (default): PeSTO tapered tables (incremental) + tempo +
+24 linear features, corrected by the correction history: passed pawns by
+rank, isolated, doubled, bishop pair, rook on open / semi-open file and
+7th rank, mobility per piece type, king safety (attack units squared,
+pawn shield, open files at the king, heavy pieces on the king's files,
+pawn storm, the attack term again while the attacker has a queen) and
+threats (pieces attacked by pawns, hanging pieces). `EvalMode=1`: PeSTO
+only; `EvalMode=2`: light (no mobility or king-zone walks). Pawn terms
+are pure bit arithmetic on the pawn bitboards (fills, spans, file masks);
+knights use attack tables + popcount; bishops / rooks / queens walk rays.
+While the pieces are evaluated, each side's attacked squares are
+collected as bitboard unions, which the threat terms reuse. Weights live
+in `tools/weights.json` (generated into `src/weights.bend`). The feature
+vector is dumped by the `features` command for the learning pipeline.
 
 ## Parallel search (`Threads`)
 

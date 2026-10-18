@@ -244,7 +244,78 @@ tests: **30/30** (adds Threads 2/4, TimePolicy 2/3, Practical). Tactics:
 **ALL PROOFS CHECK** after the position-record changes
 (`results/proof_check2.txt`, 9 min 25 s).
 
-## 10. Known limitations
+## 10. Phase 3: learning from lost games (algorithmic, no neural networks)
+
+### 10.1 Loss analysis
+
+All 169 games BendChess lost in the phase-2 matches (section 8.1) were
+re-analysed with Stockfish 16 as a referee only (depth 14); nothing
+learned from it is a network, only a diagnosis
+(`tools/loss_analysis.py`, `tools/eval_gap.py`; full tables in
+`results/loss_analysis.md` and `results/eval_gap.md`).
+
+* 120 of the 169 losses declined gradually; 49 had one decisive error
+  (a drop from >= -100 to <= -150 cp). The decisive errors fell early:
+  median move 18, 73% in the opening / middlegame, 76% with queens on,
+  71% positional (the refutation was not a capture or a check).
+* Re-searching each decisive position classified the cause: 43%
+  depth/time (10x the time finds the referee's move), 22% pruning (the
+  no-pruning search finds it), 35% knowledge (neither does).
+* BendChess was over-optimistic: after its decisive move its own score
+  was a median +181 cp above the referee's. Over 2084 positions from the
+  lost games the gap grows with the game: moves 10-14 referee -48 vs
+  BendChess +21; moves 15-19 -131 vs +4; moves 20-29 -223 vs -58.
+* The share of badly over-optimistic positions rises with king danger
+  (31% with a quiet king, 42-52% under attack) and the worst examples
+  are king-safety cases, so king safety and threats were the targets.
+
+### 10.2 What was built (all hand-written terms)
+
+| feature | idea |
+|---|---|
+| 18 king_open_files | open / semi-open files at and next to the king (also adds 2 attack units per file) |
+| 19 heavy_on_king_file | enemy rook / queen on a file near the king with no defending pawn (+3 units) |
+| 20 pawn_storm | enemy pawns advanced on the king's wing (+2 units) |
+| 21 king_danger_queen | the king-attack term again, only while the attacker has a queen |
+| 22 pawn_threat | pieces (not pawns or kings) attacked by enemy pawns |
+| 23 hanging_piece | pieces attacked and not defended (attack unions of all pieces, pawns, king) |
+
+Attack sets are accumulated per side as bitboard unions while the pieces
+are evaluated, so the threat terms cost a few word operations. The
+features were checked against an independent python-chess
+implementation: 0 mismatches on 1000 positions. All 24 weights were
+refit (`tools/refit_eval.py`) on 39,687 positions: the self-play set plus
+15 positions per game from the Stockfish matches, labelled by Stockfish
+depth 12 and the game result, match positions weighted 3x, game-grouped
+train/test split. Held-out MSE: all 0.02990 -> 0.02964, self-play
+0.02537 -> 0.02527, match positions 0.07981 -> 0.07771.
+
+### 10.3 Danger-aware pruning (tried, reverted)
+
+The evaluation exported a danger signal for the side to move
+(queen-backed king attack, threats against its pieces) through the eval
+hash; in danger, late-move and history pruning were disabled and LMR
+reduced one ply less (+9% nodes at fixed depth). Two SPRTs against the
+king-safety build were level: trigger "king attack or 2+ threats"
++174 =181 -174 after 529 games (stopped by a container restart), and
+"king attack only" +318 =364 -318 over 1000 games, 0 Elo [-17, +17].
+It was reverted: no measurable gain at 5 s + 0.05 s.
+
+### 10.4 Measured effects
+
+SPRT (`tools/match.py --sprt elo0,elo1`, GSPRT normal approximation,
+alpha = beta = 0.05, H0 = 0 Elo, H1 = +10 Elo), 5 s + 0.05 s, 1 thread,
+book openings with both colours, all games distinct:
+
+| test | games | W / D / L | Elo (95%) | SPRT |
+|---|---|---|---|---|
+| king safety + threats (refit) vs phase-2 final | 827 | 321 / 263 / 243 | **+33** [+13, +53] | H1 accepted |
+| danger pruning (king attack or threats) vs king safety | 529 | 174 / 181 / 174 | 0 | stopped (restart), LLR -0.33 |
+| danger pruning (king attack) vs king safety | 1000 | 318 / 364 / 318 | 0 [-17, +17] | inconclusive, LLR -0.65 |
+
+MAGNUS_V3 (Magnus-proxy re-run with this build: in progress)
+
+## 11. Known limitations
 
 * Strength: about 2800-2900 on Stockfish's UCI_Elo scale (section 8.1);
   full-strength Stockfish 16 scores 35.5/40 at equal time and 38.5/40
@@ -277,7 +348,7 @@ tests: **30/30** (adds Threads 2/4, TimePolicy 2/3, Practical). Tactics:
   fallible (human-like) opponents was not measured; no such opponent was
   available offline.
 
-## 11. Highest-value next improvements
+## 12. Highest-value next improvements
 
 1. Node rate: a packed position record (side/castling/ep/clocks and king
    squares in a few words) with the make-move laws re-proved over bit
