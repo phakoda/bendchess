@@ -6,51 +6,51 @@ import Base
 def w_mg(i: Nat) -> U32:
   match i:
     case 0n:
-      4294967294
+      4294967293
     case 1n:
-      6
+      5
     case 2n:
       4294967287
     case 3n:
-      12
+      11
     case 4n:
       45
     case 5n:
       47
     case 6n:
-      4294967286
-    case 7n:
-      4294967295
-    case 8n:
       4294967283
+    case 7n:
+      4294967294
+    case 8n:
+      4294967286
     case 9n:
-      35
+      33
     case 10n:
-      9
+      8
     case 11n:
       4294967266
     case 12n:
-      3
+      0
     case 13n:
-      6
+      3
     case 14n:
-      4
+      0
     case 15n:
-      1
+      2
     case 16n:
-      5
+      2
     case 17n:
-      13
+      7
     case 18n:
-      4294967276
+      4294967277
     case 19n:
-      25
+      23
     case 20n:
       12
     case 21n:
       1
     case 22n:
-      40
+      41
     case 23n:
       30
     case _:
@@ -59,49 +59,49 @@ def w_mg(i: Nat) -> U32:
 def w_eg(i: Nat) -> U32:
   match i:
     case 0n:
-      18
+      17
     case 1n:
-      20
+      19
     case 2n:
-      61
+      60
     case 3n:
-      83
+      80
     case 4n:
-      57
+      56
     case 5n:
       13
     case 6n:
-      4294967284
+      4294967280
     case 7n:
-      4294967273
+      4294967272
     case 8n:
-      68
+      69
     case 9n:
       4294967275
     case 10n:
-      16
+      17
     case 11n:
       17
     case 12n:
-      7
+      8
     case 13n:
-      3
+      4
     case 14n:
-      3
-    case 15n:
       7
+    case 15n:
+      4
     case 16n:
-      4294967294
+      0
     case 17n:
-      4294967291
+      4294967288
     case 18n:
-      4294967291
+      4294967293
     case 19n:
-      5
+      4
     case 20n:
-      0
+      4294967293
     case 21n:
-      0
+      1
     case 22n:
       30
     case 23n:

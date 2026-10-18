@@ -3,28 +3,28 @@
  "features": [
   [
    "passed_r1",
-   -2,
-   18
+   -3,
+   17
   ],
   [
    "passed_r2",
-   6,
-   20
+   5,
+   19
   ],
   [
    "passed_r3",
    -9,
-   61
+   60
   ],
   [
    "passed_r4",
-   12,
-   83
+   11,
+   80
   ],
   [
    "passed_r5",
    45,
-   57
+   56
   ],
   [
    "passed_r6",
@@ -33,28 +33,28 @@
   ],
   [
    "isolated",
-   -10,
-   -12
+   -13,
+   -16
   ],
   [
    "doubled",
-   -1,
-   -23
+   -2,
+   -24
   ],
   [
    "bishop_pair",
-   -13,
-   68
+   -10,
+   69
   ],
   [
    "rook_open",
-   35,
+   33,
    -21
   ],
   [
    "rook_semiopen",
-   9,
-   16
+   8,
+   17
   ],
   [
    "rook_7th",
@@ -63,57 +63,57 @@
   ],
   [
    "mob_knight",
-   3,
-   7
+   0,
+   8
   ],
   [
    "mob_bishop",
-   6,
-   3
+   3,
+   4
   ],
   [
    "mob_rook",
-   4,
-   3
-  ],
-  [
-   "mob_queen",
-   1,
+   0,
    7
   ],
   [
+   "mob_queen",
+   2,
+   4
+  ],
+  [
    "king_attack",
-   5,
-   -2
+   2,
+   0
   ],
   [
    "pawn_shield",
-   13,
-   -5
+   7,
+   -8
   ],
   [
    "king_open_files",
-   -20,
-   -5
+   -19,
+   -3
   ],
   [
    "heavy_on_king_file",
-   25,
-   5
+   23,
+   4
   ],
   [
    "pawn_storm",
    12,
-   0
+   -3
   ],
   [
    "king_danger_queen",
    1,
-   0
+   1
   ],
   [
    "pawn_threat",
-   40,
+   41,
    30
   ],
   [
@@ -121,5 +121,20 @@
    30,
    20
   ]
- ]
+ ],
+ "fit": {
+  "data": "evalset.jsonl",
+  "positions": 39687,
+  "ridge": 1.0,
+  "test_mse": {
+   "all": 0.029642752996204693,
+   "selfplay": 0.02527343696524953,
+   "matches": 0.07770522933671146
+  },
+  "test_mse_before": {
+   "all": 0.029904726768246043,
+   "selfplay": 0.025367524816763132,
+   "matches": 0.07981394823455806
+  }
+ }
 }
