@@ -1093,9 +1093,9 @@ def sr.rfp?(m: Array<U32>, +p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply
         C.s.ge(ev, beta) && U32.is_ge(B.P.ph(p), 3))
 
 # danger: the side to move faces a queen-backed king attack worth about
-# 60 cp or more, or two or more threats against its pieces (E.DSTM)
+# 60 cp or more (E.DSTM, low byte)
 def danger(+d: U32) -> Bool:
-  U32.is_ge(U32.and(d, 255), 20) || U32.is_ge(U32.shrn(d, 8n), 2)
+  U32.is_ge(U32.and(d, 255), 20)
 
 def sr.ev.i?(+p: B.Pos, +depth: U32, +alpha: U32, +beta: U32, +ply: U32, +nullok: Bool, +chk: Bool,
              +ttm: U32, +o: Opt, +ev: U32, +dg: U32, r: Array<U32> & U32) -> Array<U32> & U32:
