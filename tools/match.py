@@ -204,6 +204,19 @@ def elo_summary(points):
             "preliminary": n < 200}
 
 
+def sprt_llr(points, elo0, elo1):
+    """Generalized SPRT log-likelihood ratio (normal approximation of the
+    per-game score, as used by fishtest's trinomial model)."""
+    n = len(points)
+    if n < 2:
+        return 0.0
+    s = sum(points) / n
+    var = max(sum((p - s) ** 2 for p in points) / n, 1e-3)
+    s0 = 1 / (1 + 10 ** (-elo0 / 400))
+    s1 = 1 / (1 + 10 ** (-elo1 / 400))
+    return n * (s1 - s0) * (2 * s - s0 - s1) / (2 * var)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("a")
@@ -223,6 +236,7 @@ def main():
     ap.add_argument("--out", default="results")
     ap.add_argument("--event", default="BendChess match")
     ap.add_argument("--tag", default="")
+    ap.add_argument("--sprt", default="", help="elo0,elo1: stop early when the SPRT (alpha = beta = 0.05) decides")
     ap.add_argument("--book", default=os.path.join(ROOT, "tools", "book.epd"),
                     help="EPD/FEN file of openings ('' = the 32-line suite)")
     args = ap.parse_args()
@@ -246,20 +260,38 @@ def main():
     results = []
     lock = threading.Lock()
     t0 = time.time()
+    sprt = None
+    if args.sprt:
+        e0, e1 = (float(x) for x in args.sprt.split(","))
+        lo, hi = math.log(0.05 / 0.95), math.log(0.95 / 0.05)
+        sprt = {"elo0": e0, "elo1": e1, "lower": lo, "upper": hi, "llr": 0.0, "result": "inconclusive"}
     with cf.ThreadPoolExecutor(max_workers=args.concurrency) as ex:
         futs = [ex.submit(play_game, args, spec_a, spec_b, fen, line, aw, g) for fen, line, aw, g in jobs]
         for fut in cf.as_completed(futs):
+            if fut.cancelled():
+                continue
             r = fut.result()
             with lock:
                 results.append(r)
                 s = elo_summary([x["points_a"] for x in results])
+                extra = ""
+                if sprt is not None:
+                    sprt["llr"] = sprt_llr([x["points_a"] for x in results], sprt["elo0"], sprt["elo1"])
+                    extra = f" llr {sprt['llr']:+.2f}"
+                    if sprt["result"] == "inconclusive" and len(results) >= 40 and \
+                            (sprt["llr"] >= sprt["upper"] or sprt["llr"] <= sprt["lower"]):
+                        sprt["result"] = "H1 accepted" if sprt["llr"] >= sprt["upper"] else "H0 accepted"
+                        for f2 in futs:
+                            f2.cancel()
                 print(f"game {r['game']:3d} {'A=white' if r['a_white'] else 'A=black'} {r['result']:7s} "
                       f"{r['reason']:22s} plies={r['plies']:3d} | A: +{s['wins']} ={s['draws']} -{s['losses']} "
-                      f"score {s['score']:.3f}", flush=True)
+                      f"score {s['score']:.3f}{extra}", flush=True)
     results.sort(key=lambda r: r["game"])
     summ = elo_summary([r["points_a"] for r in results])
     summ.update(pair_interval(results) or {})
     summ["distinct_games"] = len({r["pgn"].split("\n\n", 1)[-1] for r in results})
+    if sprt is not None:
+        summ["sprt"] = sprt
     bdepth = [d for r in results for d in r["b_depth"]]
     bnodes = [n for r in results for n in r["b_nodes"]]
     btms = [t for r in results for t in r["b_time"]]
